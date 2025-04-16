@@ -17,4 +17,3 @@ A full-stack skill-sharing and booking platform for mentors and learners to conn
 - Database: PostgreSQL
 - Auth: JWT
 - Deployment: Render (backend), Vercel (frontend)
-
