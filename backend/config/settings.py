@@ -43,9 +43,8 @@ INSTALLED_APPS = [
     'accounts',
     'skills',
     'bookings',
-    'messages',
+    'messages.apps.MessagesConfig',
     # 'notifications',
-
 ]
 
 MIDDLEWARE = [
@@ -138,3 +137,5 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+AUTH_USER_MODEL = 'accounts.User'
