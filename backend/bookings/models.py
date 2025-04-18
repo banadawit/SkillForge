@@ -13,3 +13,12 @@ class SessionBooking(models.Model):
 
     def __str__(self):
         return f"{self.learner.username} booked {self.skill.name} with {self.skill.mentor.username}"
+
+class Review(models.Model):
+    session = models.OneToOneField(SessionBooking, on_delete=models.CASCADE)
+    rating = models.PositiveSmallIntegerField()
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Review by {self.session.learner.username} for {self.session.skill.mentor.username}"
