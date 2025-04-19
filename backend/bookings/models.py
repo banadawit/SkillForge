@@ -15,6 +15,7 @@ class SessionBooking(models.Model):
         return f"{self.learner.username} booked {self.skill.name} with {self.skill.mentor.username}"
 
 class Review(models.Model):
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE)
     session = models.OneToOneField(SessionBooking, on_delete=models.CASCADE)
     rating = models.PositiveSmallIntegerField()
     comment = models.TextField(blank=True)

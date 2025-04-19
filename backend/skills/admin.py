@@ -4,8 +4,8 @@ from .models import Availability
 
 @admin.register(Skill)
 class SkillAdmin(admin.ModelAdmin):
-    list_display = ('name', 'mentor', 'price_per_session')
-    search_fields = ('name', 'mentor__username')
+    list_display = ('title', 'mentor', 'price_per_session')
+    search_fields = ('title', 'mentor__username')
     list_filter = ('mentor',)
 
 @admin.register(Availability)
