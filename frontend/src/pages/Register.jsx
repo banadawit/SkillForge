@@ -1,6 +1,7 @@
 import { useState } from "react";
-import axios from "axios";
+import axios from "../utils/axios"; // ✅ custom axios instance
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom"; // optional for redirect
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -11,6 +12,8 @@ export default function Register() {
     bio: "",
   });
 
+  const navigate = useNavigate(); // optional
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -18,10 +21,12 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-    //   await axios.post("/api/accounts/register/", form);
-      await axios.post("http://localhost:8000/api/accounts/register/", form);
+      await axios.post("/accounts/register/", form); // ✅ cleaner
+      toast.success("Registered successfully! You can now log in.");
+      navigate("/login"); // optional: redirect after success
     } catch (err) {
-      toast.error("Registration failed.");
+      console.log(err.response?.data); // helpful for debugging
+      toast.error("Registration failed. Please check your input.");
     }
   };
 
@@ -34,6 +39,7 @@ export default function Register() {
           placeholder="Username"
           className="w-full p-2 border"
           onChange={handleChange}
+          required
         />
         <input
           name="email"
@@ -41,6 +47,7 @@ export default function Register() {
           placeholder="Email"
           className="w-full p-2 border"
           onChange={handleChange}
+          required
         />
         <input
           name="password"
@@ -48,6 +55,7 @@ export default function Register() {
           placeholder="Password"
           className="w-full p-2 border"
           onChange={handleChange}
+          required
         />
         <select
           name="role"
