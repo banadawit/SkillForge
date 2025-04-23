@@ -1,16 +1,26 @@
-import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { Link, useNavigate } from 'react-router-dom';
+import { getUser, isMentor } from '../utils/auth';
 
-export default function Navbar() {
-  const { user } = useAuth();
+const Navbar = () => {
+  const user = getUser();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   return (
     <nav className="bg-gray-800 text-white p-4 flex justify-between">
-      <div className="font-bold">SkillBridge</div>
+      <Link to="/" className="text-xl font-bold">SkillConnect</Link>
       <div className="space-x-4">
+        {user && <Link to="/skills">Skills</Link>}
+        {isMentor() && <Link to="/add-skill">Add Skill</Link>}
         {user ? (
           <>
             <Link to="/profile">Profile</Link>
+            <button onClick={handleLogout} className="text-red-600">Logout</button>
           </>
         ) : (
           <>
@@ -21,4 +31,6 @@ export default function Navbar() {
       </div>
     </nav>
   );
-}
+};
+
+export default Navbar;

@@ -1,11 +1,9 @@
 import { useState } from "react";
+import axios from "../utils/axios";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import { useAuth } from "../context/AuthContext";
 
-export default function Login() {
+const Login = () => {
   const [form, setForm] = useState({ username: "", password: "" });
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -14,36 +12,46 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      await login(form.username, form.password);
-      toast.success("Login successful! Redirecting to profile...");
-      navigate("/profile");
-    } catch {
-      toast.error("Login failed. Please try again.");
-    }
+    const res = await axios.post("/accounts/login/", form);
+    localStorage.setItem("token", res.data.access);
+
+    // Fetch user profile
+    const userRes = await axios.get("/accounts/profile/");
+    localStorage.setItem("user", JSON.stringify(userRes.data));
+
+    navigate("/skills");
   };
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h2 className="text-xl font-semibold mb-4">Login</h2>
+      <h1 className="text-2xl font-bold mb-4">Login</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           name="username"
-          placeholder="Username"
-          className="w-full p-2 border"
+          value={form.username}
           onChange={handleChange}
+          placeholder="Username"
+          className="w-full p-2 border rounded"
+          required
         />
         <input
           name="password"
           type="password"
-          placeholder="Password"
-          className="w-full p-2 border"
+          value={form.password}
           onChange={handleChange}
+          placeholder="Password"
+          className="w-full p-2 border rounded"
+          required
         />
-        <button className="bg-green-600 text-white px-4 py-2 rounded">
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
           Login
         </button>
       </form>
     </div>
   );
-}
+};
+
+export default Login;

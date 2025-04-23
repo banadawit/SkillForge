@@ -20,7 +20,6 @@ export default function Register() {
     try {
     //   await axios.post("/api/accounts/register/", form);
       await axios.post("http://localhost:8000/api/accounts/register/", form);
-      toast.success("Registered successfully. Please login.");
     } catch (err) {
       toast.error("Registration failed.");
     }
