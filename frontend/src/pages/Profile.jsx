@@ -1,7 +1,14 @@
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout(); // clear user and token from context/localStorage
+    navigate("/login"); // redirect to login page
+  };
 
   if (!user) return <div className="text-center mt-10">Loading profile...</div>;
 
@@ -21,7 +28,7 @@ export default function Profile() {
         <strong>Bio:</strong> {user.bio}
       </p>
       <button
-        onClick={logout}
+        onClick={handleLogout}
         className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
       >
         Logout

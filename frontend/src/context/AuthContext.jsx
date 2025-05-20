@@ -10,19 +10,32 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      axios.get("http://localhost:8000/api/accounts/profile/", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(res => setUser(res.data))
-      .catch(() => setUser(null));
+      axios
+        .get("http://localhost:8000/api/accounts/profile/", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => setUser(res.data))
+        .catch(() => setUser(null));
     }
   }, [token]);
 
   const login = async (username, password) => {
-    const res = await axios.post("http://localhost:8000/api/accounts/login/", { username, password });
+    const res = await axios.post("http://localhost:8000/api/accounts/login/", {
+      username,
+      password,
+    });
     const access = res.data.access;
     localStorage.setItem("token", access);
     setToken(access);
+
+    // Immediately fetch and set user
+    const userRes = await axios.get(
+      "http://localhost:8000/api/accounts/profile/",
+      {
+        headers: { Authorization: `Bearer ${access}` },
+      }
+    );
+    setUser(userRes.data);
   };
 
   const logout = () => {
