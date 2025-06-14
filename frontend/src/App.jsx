@@ -9,6 +9,7 @@ import Navbar from "./components/Navbar";
 import SkillList from "./pages/SkillList";
 import AddSkill from "./pages/AddSkill";
 import Home from "./pages/Home";
+import MyLearning from "./pages/MyLearning ";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/skills" element={<SkillList />} />
           <Route path="/add-skill" element={<AddSkill />} />
+          <Route path="/my-learning" element={<MyLearning />} />
         </Routes>
         <ToastContainer /> {/* Add this line for the Toast notifications */}
       </AuthProvider>
