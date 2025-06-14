@@ -8,6 +8,7 @@ import Profile from "./pages/Profile";
 import Navbar from "./components/Navbar";
 import SkillList from "./pages/SkillList";
 import AddSkill from "./pages/AddSkill";
+import Home from "./pages/Home";
 
 export default function App() {
   return (
@@ -15,7 +16,7 @@ export default function App() {
       <AuthProvider>
         <Navbar />
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Home />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/profile" element={<Profile />} />
