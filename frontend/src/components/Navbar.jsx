@@ -1,39 +1,50 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { getUser, isMentor } from '../utils/auth';
-import { useState, useEffect } from 'react';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { useState, useEffect } from "react";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const Navbar = () => {
-  const user = getUser();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
+    logout();
+    navigate("/login");
   };
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const isMentor = () => {
+    return user?.is_mentor || false;
+  };
+
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-indigo-900 shadow-lg' : 'bg-gradient-to-r from-indigo-900 to-indigo-700'}`}>
+    <nav
+      className={`fixed w-full z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-indigo-900 shadow-lg"
+          : "bg-gradient-to-r from-indigo-900 to-indigo-700"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="text-2xl font-bold text-white hover:text-indigo-200 transition-colors duration-300 flex items-center"
             >
-              <span className="bg-white text-indigo-600 px-2 py-1 rounded mr-2">SC</span>
+              <span className="bg-white text-indigo-600 px-2 py-1 rounded mr-2">
+                SC
+              </span>
               <span className="hidden sm:inline">SkillConnect</span>
             </Link>
           </div>
@@ -43,62 +54,64 @@ const Navbar = () => {
             <div className="ml-10 flex items-center space-x-4">
               {user ? (
                 <>
-                  <Link 
-                    to="/skills" 
+                  <Link
+                    to="/skills"
                     className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
-                    {isMentor() ? 'My Skills' : 'Browse Skills'}
+                    {isMentor() ? "My Skills" : "Browse Skills"}
                   </Link>
-                  
+
                   {isMentor() && (
-                    <Link 
-                      to="/add-skill" 
+                    <Link
+                      to="/add-skill"
                       className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                     >
                       Add Skill
                     </Link>
                   )}
-                  
-                  <Link 
-                    to={isMentor() ? "/sessions" : "/my-learning"} 
+
+                  <Link
+                    to={isMentor() ? "/sessions" : "/my-learning"}
                     className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
-                    {isMentor() ? 'My Sessions' : 'My Learning'}
+                    {isMentor() ? "My Sessions" : "My Learning"}
                   </Link>
-                  
-                  <Link 
-                    to="/profile" 
+
+                  <Link
+                    to="/profile"
                     className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
                     Profile
                   </Link>
-                  
-                  <button 
-                    onClick={handleLogout} 
+
+                  <button
+                    onClick={handleLogout}
                     className="text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 flex items-center"
                   >
                     Logout
-                    <span className="ml-1 inline-block hover:animate-pulse">→</span>
+                    <span className="ml-1 inline-block hover:animate-pulse">
+                      →
+                    </span>
                   </button>
                 </>
               ) : (
                 <>
-                  <Link 
-                    to="/skills" 
+                  <Link
+                    to="/skills"
                     className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
                     Browse Skills
                   </Link>
-                  
-                  <Link 
-                    to="/login" 
+
+                  <Link
+                    to="/login"
                     className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
                     Login
                   </Link>
-                  
-                  <Link 
-                    to="/register" 
+
+                  <Link
+                    to="/register"
                     className="text-indigo-100 bg-indigo-600 hover:bg-indigo-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
                     Register
@@ -125,11 +138,15 @@ const Navbar = () => {
       </div>
 
       {/* Mobile Navigation */}
-      <div className={`md:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+      <div
+        className={`md:hidden transition-all duration-300 ease-in-out ${
+          isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+        }`}
+      >
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-indigo-800">
           {user && (
-            <Link 
-              to="/skills" 
+            <Link
+              to="/skills"
               className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
               onClick={() => setIsOpen(false)}
             >
@@ -137,8 +154,8 @@ const Navbar = () => {
             </Link>
           )}
           {isMentor() && (
-            <Link 
-              to="/add-skill" 
+            <Link
+              to="/add-skill"
               className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
               onClick={() => setIsOpen(false)}
             >
@@ -147,18 +164,18 @@ const Navbar = () => {
           )}
           {user ? (
             <>
-              <Link 
-                to="/profile" 
+              <Link
+                to="/profile"
                 className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
                 onClick={() => setIsOpen(false)}
               >
                 Profile
               </Link>
-              <button 
+              <button
                 onClick={() => {
                   handleLogout();
                   setIsOpen(false);
-                }} 
+                }}
                 className="w-full text-left text-white bg-red-600 hover:bg-red-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
               >
                 Logout
@@ -166,15 +183,15 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
                 onClick={() => setIsOpen(false)}
               >
                 Login
               </Link>
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="text-white bg-indigo-600 hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
                 onClick={() => setIsOpen(false)}
               >

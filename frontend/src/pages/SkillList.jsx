@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import axios from "../utils/axios";
 import SkillCard from "../components/SkillCard";
 import {
   FiSearch,
@@ -8,128 +7,166 @@ import {
   FiChevronRight,
 } from "react-icons/fi";
 
-const dummySkills = [
-  {
-    id: 1,
-    title: "React Development",
-    price: 45,
-    mentor: "Sarah Johnson",
-    description: "Master React hooks, context API, and modern best practices.",
-    category: "Web Development",
-    rating: 4.9,
-    sessions: 128,
-  },
-  {
-    id: 2,
-    title: "UI/UX Design",
-    price: 55,
-    mentor: "Alex Chen",
-    description:
-      "Learn Figma, user research, and interaction design principles.",
-    category: "Design",
-    rating: 4.8,
-    sessions: 96,
-  },
-  {
-    id: 3,
-    title: "Data Science",
-    price: 60,
-    mentor: "Dr. Michael Wong",
-    description: "Python, Pandas, and machine learning fundamentals.",
-    category: "Data Science",
-    rating: 4.7,
-    sessions: 84,
-  },
-  {
-    id: 4,
-    title: "Advanced JavaScript",
-    price: 50,
-    mentor: "Jamal Williams",
-    description: "Deep dive into closures, prototypes, and async programming.",
-    category: "Web Development",
-    rating: 4.9,
-    sessions: 112,
-  },
-  {
-    id: 5,
-    title: "Mobile App Development",
-    price: 65,
-    mentor: "Priya Patel",
-    description: "Build cross-platform apps with React Native.",
-    category: "Mobile",
-    rating: 4.6,
-    sessions: 75,
-  },
-  {
-    id: 6,
-    title: "DevOps Fundamentals",
-    price: 70,
-    mentor: "Carlos Mendez",
-    description: "CI/CD pipelines, Docker, and Kubernetes basics.",
-    category: "DevOps",
-    rating: 4.8,
-    sessions: 68,
-  },
-  {
-    id: 7,
-    title: "Digital Marketing",
-    price: 40,
-    mentor: "Lisa Thompson",
-    description: "SEO, social media, and content marketing strategies.",
-    category: "Marketing",
-    rating: 4.5,
-    sessions: 92,
-  },
-  {
-    id: 8,
-    title: "Product Management",
-    price: 75,
-    mentor: "David Kim",
-    description: "Agile methodologies and product roadmapping.",
-    category: "Business",
-    rating: 4.9,
-    sessions: 112,
-  },
-  {
-    id: 9,
-    title: "Python Automation",
-    price: 45,
-    mentor: "Emma Davis",
-    description: "Automate repetitive tasks with Python scripts.",
-    category: "Programming",
-    rating: 4.7,
-    sessions: 88,
-  },
-  {
-    id: 10,
-    title: "Blockchain Basics",
-    price: 80,
-    mentor: "Raj Patel",
-    description: "Introduction to blockchain and smart contracts.",
-    category: "Emerging Tech",
-    rating: 4.8,
-    sessions: 56,
-  },
-];
-
-const categories = [...new Set(dummySkills.map((skill) => skill.category))];
-
 const SkillList = () => {
+  // Dummy data for skills
+  const dummySkills = [
+    {
+      id: 1,
+      title: "React Development",
+      price: 45,
+      mentor: "Sarah Johnson",
+      description:
+        "Master React hooks, context API, and modern best practices.",
+      category: "Web Development",
+      rating: 4.9,
+      sessions: 128,
+      mentorId: 101,
+    },
+    {
+      id: 2,
+      title: "UI/UX Design",
+      price: 55,
+      mentor: "Alex Chen",
+      description:
+        "Learn Figma, user research, and interaction design principles.",
+      category: "Design",
+      rating: 4.8,
+      sessions: 96,
+      mentorId: 102,
+    },
+    {
+      id: 3,
+      title: "Data Science",
+      price: 60,
+      mentor: "Dr. Michael Wong",
+      description: "Python, Pandas, and machine learning fundamentals.",
+      category: "Data Science",
+      rating: 4.7,
+      sessions: 84,
+      mentorId: 103,
+    },
+    {
+      id: 4,
+      title: "Advanced JavaScript",
+      price: 50,
+      mentor: "Jamal Williams",
+      description:
+        "Deep dive into closures, prototypes, and async programming.",
+      category: "Web Development",
+      rating: 4.9,
+      sessions: 112,
+      mentorId: 104,
+    },
+    {
+      id: 5,
+      title: "Mobile App Development",
+      price: 65,
+      mentor: "Priya Patel",
+      description: "Build cross-platform apps with React Native.",
+      category: "Mobile",
+      rating: 4.6,
+      sessions: 75,
+      mentorId: 105,
+    },
+    {
+      id: 6,
+      title: "DevOps Fundamentals",
+      price: 70,
+      mentor: "Carlos Mendez",
+      description: "CI/CD pipelines, Docker, and Kubernetes basics.",
+      category: "DevOps",
+      rating: 4.8,
+      sessions: 68,
+      mentorId: 106,
+    },
+    {
+      id: 7,
+      title: "Digital Marketing",
+      price: 40,
+      mentor: "Lisa Thompson",
+      description: "SEO, social media, and content marketing strategies.",
+      category: "Marketing",
+      rating: 4.5,
+      sessions: 92,
+      mentorId: 107,
+    },
+    {
+      id: 8,
+      title: "Product Management",
+      price: 75,
+      mentor: "David Kim",
+      description: "Agile methodologies and product roadmapping.",
+      category: "Business",
+      rating: 4.9,
+      sessions: 112,
+      mentorId: 108,
+    },
+    {
+      id: 9,
+      title: "Python Automation",
+      price: 45,
+      mentor: "Emma Davis",
+      description: "Automate repetitive tasks with Python scripts.",
+      category: "Programming",
+      rating: 4.7,
+      sessions: 88,
+      mentorId: 109,
+    },
+    {
+      id: 10,
+      title: "Blockchain Basics",
+      price: 80,
+      mentor: "Raj Patel",
+      description: "Introduction to blockchain and smart contracts.",
+      category: "Emerging Tech",
+      rating: 4.8,
+      sessions: 56,
+      mentorId: 110,
+    },
+    {
+      id: 11,
+      title: "GraphQL API Design",
+      price: 55,
+      mentor: "Sophia Lee",
+      description: "Build efficient APIs with GraphQL.",
+      category: "Web Development",
+      rating: 4.7,
+      sessions: 72,
+      mentorId: 111,
+    },
+    {
+      id: 12,
+      title: "Cybersecurity Fundamentals",
+      price: 85,
+      mentor: "Mark Robinson",
+      description: "Learn essential security principles and best practices.",
+      category: "Security",
+      rating: 4.9,
+      sessions: 64,
+      mentorId: 112,
+    },
+  ];
+
+  const categories = [
+    "All",
+    ...new Set(dummySkills.map((skill) => skill.category)),
+  ];
+  const skillsPerPage = 8;
+
   const [skills, setSkills] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const skillsPerPage = 8;
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call with dummy data
-    setSkills(dummySkills);
-    // Real API call would look like:
-    // const fetchSkills = async () => {
-    //   const res = await axios.get("/skills/");
-    //   setSkills(res.data);
-    // };
-    // fetchSkills();
+    // Simulate API loading
+    const timer = setTimeout(() => {
+      setSkills(dummySkills);
+      setLoading(false);
+    }, 800);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const filteredSkills = skills.filter((skill) => {
@@ -152,10 +189,16 @@ const SkillList = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  if (loading) {
+    return (
+      <div className="p-4 max-w-7xl mx-auto pt-20 flex justify-center items-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 max-w-7xl mx-auto pt-20">
-      {" "}
-      {/* Added pt-20 for navbar spacing */}
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-extrabold text-gray-800 mb-2">
           Explore Available Skills
@@ -164,6 +207,7 @@ const SkillList = () => {
           Find the perfect mentor to help you grow
         </p>
       </div>
+
       {/* Search and Filter Section */}
       <div className="mb-8 bg-white p-4 rounded-xl shadow-sm">
         <div className="flex flex-col md:flex-row gap-4">
@@ -178,7 +222,7 @@ const SkillList = () => {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setCurrentPage(1); // Reset to first page on search
+                setCurrentPage(1);
               }}
             />
           </div>
@@ -190,10 +234,9 @@ const SkillList = () => {
               value={selectedCategory}
               onChange={(e) => {
                 setSelectedCategory(e.target.value);
-                setCurrentPage(1); // Reset to first page on filter change
+                setCurrentPage(1);
               }}
             >
-              <option value="All">All Categories</option>
               {categories.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -203,6 +246,7 @@ const SkillList = () => {
           </div>
         </div>
       </div>
+
       {/* Skills Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
         {currentSkills.length > 0 ? (
@@ -226,6 +270,7 @@ const SkillList = () => {
           </div>
         )}
       </div>
+
       {/* Pagination */}
       {filteredSkills.length > skillsPerPage && (
         <div className="flex justify-center mt-8">
@@ -262,6 +307,7 @@ const SkillList = () => {
           </nav>
         </div>
       )}
+
       {/* Popular Skills Section */}
       <div className="mt-16 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div className="flex justify-between items-center mb-6">

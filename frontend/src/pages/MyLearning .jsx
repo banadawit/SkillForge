@@ -32,11 +32,11 @@ const MyLearning = () => {
 
     const fetchSessions = async () => {
       try {
-        // Simulated API calls - replace with actual endpoints
-        const upcomingRes = await axios.get("/sessions/upcoming/");
-        const pastRes = await axios.get("/sessions/past/");
+        // Simulated loading delay
+        await new Promise((resolve) => setTimeout(resolve, 800));
 
-        setUpcomingSessions([
+        // Dummy data for upcoming sessions
+        const dummyUpcoming = [
           {
             id: 1,
             skill: "Advanced React Patterns",
@@ -49,22 +49,89 @@ const MyLearning = () => {
             progress: { completed: 2, total: 5 },
             notesAvailable: true,
           },
-          // ... more dummy data
-        ]);
-
-        setPastSessions([
           {
             id: 2,
+            skill: "Node.js Performance Optimization",
+            mentor: "Michael Chen",
+            mentorId: 102,
+            date: "2023-06-18",
+            time: "10:30",
+            duration: "1.5 hours",
+            status: "confirmed",
+            progress: { completed: 1, total: 3 },
+            notesAvailable: false,
+          },
+          {
+            id: 3,
+            skill: "TypeScript Fundamentals",
+            mentor: "Emma Wilson",
+            mentorId: 103,
+            date: "2023-06-22",
+            time: "16:00",
+            duration: "45 minutes",
+            status: "pending",
+            progress: { completed: 0, total: 4 },
+            notesAvailable: false,
+          },
+        ];
+
+        // Dummy data for past sessions
+        const dummyPast = [
+          {
+            id: 4,
             skill: "JavaScript Fundamentals",
             mentor: "Alex Chen",
             mentorId: 102,
             date: "2023-05-10",
             duration: "1.5 hours",
-            feedback: { rating: 4, comment: "Great session!" },
+            feedback: {
+              rating: 4,
+              comment:
+                "Great session! Alex explained concepts clearly and provided helpful examples.",
+            },
             notesAvailable: false,
           },
-          // ... more dummy data
-        ]);
+          {
+            id: 5,
+            skill: "CSS Grid Layout",
+            mentor: "Priya Patel",
+            mentorId: 104,
+            date: "2023-04-28",
+            duration: "2 hours",
+            feedback: {
+              rating: 5,
+              comment:
+                "Excellent mentor! I learned so much about responsive design.",
+            },
+            notesAvailable: true,
+          },
+          {
+            id: 6,
+            skill: "React Hooks Deep Dive",
+            mentor: "Sarah Johnson",
+            mentorId: 101,
+            date: "2023-04-15",
+            duration: "1 hour",
+            feedback: null,
+            notesAvailable: true,
+          },
+          {
+            id: 7,
+            skill: "GraphQL API Design",
+            mentor: "David Kim",
+            mentorId: 105,
+            date: "2023-03-22",
+            duration: "1.5 hours",
+            feedback: {
+              rating: 3,
+              comment: "Good content but could use more practical examples.",
+            },
+            notesAvailable: true,
+          },
+        ];
+
+        setUpcomingSessions(dummyUpcoming);
+        setPastSessions(dummyPast);
       } catch (error) {
         toast.error("Failed to load sessions");
       } finally {
@@ -77,9 +144,11 @@ const MyLearning = () => {
 
   const handleCancelSession = (sessionId) => {
     if (window.confirm("Are you sure you want to cancel this session?")) {
-      // API call to cancel session
-      setUpcomingSessions(upcomingSessions.filter((s) => s.id !== sessionId));
-      toast.success("Session cancelled successfully");
+      // Simulate API call
+      setTimeout(() => {
+        setUpcomingSessions(upcomingSessions.filter((s) => s.id !== sessionId));
+        toast.success("Session cancelled successfully");
+      }, 500);
     }
   };
 
@@ -89,7 +158,10 @@ const MyLearning = () => {
 
   const handleDownloadNotes = (sessionId) => {
     toast.info("Downloading session notes...");
-    // Actual download logic would go here
+    // Simulate download
+    setTimeout(() => {
+      toast.success("Notes downloaded successfully!");
+    }, 1500);
   };
 
   return (

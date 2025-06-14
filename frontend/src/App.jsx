@@ -4,12 +4,13 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css"; // Import the toast styles
 import Register from "./pages/Register";
 import Login from "./pages/Login";
-import Profile from "./pages/Profile";
+import Profile from "./pages/ProfilePage";
 import Navbar from "./components/Navbar";
 import SkillList from "./pages/SkillList";
 import AddSkill from "./pages/AddSkill";
 import Home from "./pages/Home";
 import MyLearning from "./pages/MyLearning ";
+import ProfilePage from "./pages/ProfilePage";
 
 export default function App() {
   return (
@@ -20,7 +21,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile"  element={<ProfilePage />} />
           <Route path="/skills" element={<SkillList />} />
           <Route path="/add-skill" element={<AddSkill />} />
           <Route path="/my-learning" element={<MyLearning />} />
