@@ -1,10 +1,10 @@
 import { useState } from "react";
-import axios from "../utils/axios";
 import { useNavigate } from "react-router-dom";
 import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const [form, setForm] = useState({ username: "", password: "" });
@@ -15,6 +15,7 @@ const Login = () => {
   });
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { login } = useAuth(); // ✅ use AuthContext login
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -27,13 +28,7 @@ const Login = () => {
     setError(null);
 
     try {
-      const res = await axios.post("/accounts/login/", form);
-      localStorage.setItem("token", res.data.access);
-
-      // Fetch user profile
-      const userRes = await axios.get("/accounts/profile/");
-      localStorage.setItem("user", JSON.stringify(userRes.data));
-
+      await login(form.username, form.password); // ✅ use context login
       navigate("/skills");
     } catch (err) {
       setError("Invalid username or password. Please try again.");
@@ -45,7 +40,6 @@ const Login = () => {
 
   const handleSocialLogin = (provider) => {
     setSocialLoading((prev) => ({ ...prev, [provider]: true }));
-    // Replace with your actual social login endpoint
     window.location.href = `${process.env.REACT_APP_API_URL}/auth/${provider}/`;
   };
 
@@ -74,7 +68,7 @@ const Login = () => {
               </div>
             )}
 
-            {/* Social Login Buttons */}
+            {/* Social Login */}
             <div className="space-y-3">
               <motion.button
                 type="button"
@@ -82,15 +76,10 @@ const Login = () => {
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleSocialLogin("google")}
                 disabled={socialLoading.google}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 {socialLoading.google ? (
-                  <svg
-                    className="animate-spin h-5 w-5 text-gray-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -98,12 +87,12 @@ const Login = () => {
                       r="10"
                       stroke="currentColor"
                       strokeWidth="4"
-                    ></circle>
+                    />
                     <path
                       className="opacity-75"
                       fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
+                      d="M4 12a8 8 0 018-8V0..."
+                    />
                   </svg>
                 ) : (
                   <>
@@ -119,15 +108,10 @@ const Login = () => {
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleSocialLogin("facebook")}
                 disabled={socialLoading.facebook}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1877F2] transition-all duration-200"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-white bg-[#1877F2] hover:bg-[#166FE5]"
               >
                 {socialLoading.facebook ? (
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -135,12 +119,12 @@ const Login = () => {
                       r="10"
                       stroke="currentColor"
                       strokeWidth="4"
-                    ></circle>
+                    />
                     <path
                       className="opacity-75"
                       fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
+                      d="M4 12a8 8 0 018-8V0..."
+                    />
                   </svg>
                 ) : (
                   <>
@@ -162,6 +146,7 @@ const Login = () => {
               </div>
             </div>
 
+            {/* Username & Password */}
             <div className="space-y-4">
               <div>
                 <label
@@ -171,17 +156,14 @@ const Login = () => {
                   Username
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <EnvelopeIcon className="h-5 w-5 text-gray-400" />
-                  </div>
+                  <EnvelopeIcon className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
                   <input
-                    id="username"
-                    name="username"
                     type="text"
+                    name="username"
                     value={form.username}
                     onChange={handleChange}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500"
                     placeholder="Enter your username"
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
                     required
                   />
                 </div>
@@ -195,17 +177,14 @@ const Login = () => {
                   Password
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <LockClosedIcon className="h-5 w-5 text-gray-400" />
-                  </div>
+                  <LockClosedIcon className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
                   <input
-                    id="password"
-                    name="password"
                     type="password"
+                    name="password"
                     value={form.password}
                     onChange={handleChange}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500"
                     placeholder="Enter your password"
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
                     required
                   />
                 </div>
@@ -213,78 +192,61 @@ const Login = () => {
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
+              <label className="flex items-center text-sm text-gray-600">
                 <input
-                  id="remember-me"
-                  name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  className="mr-2 h-4 w-4 text-indigo-600 border-gray-300 rounded"
                 />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-gray-700"
-                >
-                  Remember me
-                </label>
-              </div>
-
-              <div className="text-sm">
-                <a
-                  href="#"
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
-                >
-                  Forgot password?
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <motion.button
-                type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                disabled={isLoading}
-                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
-                  isLoading
-                    ? "bg-indigo-400"
-                    : "bg-indigo-600 hover:bg-indigo-700"
-                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300`}
+                Remember me
+              </label>
+              <a
+                href="#"
+                className="text-sm text-indigo-600 hover:text-indigo-500"
               >
-                {isLoading ? (
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                ) : (
-                  "Sign in"
-                )}
-              </motion.button>
+                Forgot password?
+              </a>
             </div>
+
+            <motion.button
+              type="submit"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={isLoading}
+              className={`w-full flex justify-center py-3 px-4 text-sm font-medium text-white rounded-lg transition ${
+                isLoading
+                  ? "bg-indigo-400"
+                  : "bg-indigo-600 hover:bg-indigo-700"
+              }`}
+            >
+              {isLoading ? (
+                <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0..."
+                  />
+                </svg>
+              ) : (
+                "Sign in"
+              )}
+            </motion.button>
           </form>
 
           {/* Footer */}
           <div className="bg-gray-50 px-6 py-4 text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
+              Don’t have an account?{" "}
               <a
                 href="/register"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
+                className="text-indigo-600 hover:text-indigo-500 font-medium"
               >
                 Sign up
               </a>

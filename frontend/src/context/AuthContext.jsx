@@ -5,7 +5,11 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+
   const [token, setToken] = useState(() => localStorage.getItem("token"));
 
   useEffect(() => {
@@ -14,8 +18,14 @@ export const AuthProvider = ({ children }) => {
         .get("http://localhost:8000/api/accounts/profile/", {
           headers: { Authorization: `Bearer ${token}` },
         })
-        .then((res) => setUser(res.data))
-        .catch(() => setUser(null));
+        .then((res) => {
+          setUser(res.data);
+          localStorage.setItem("user", JSON.stringify(res.data)); // ✅ persist user
+        })
+        .catch(() => {
+          setUser(null);
+          localStorage.removeItem("user"); // ✅ clear old user
+        });
     }
   }, [token]);
 
@@ -25,10 +35,11 @@ export const AuthProvider = ({ children }) => {
       password,
     });
     const access = res.data.access;
+
     localStorage.setItem("token", access);
     setToken(access);
 
-    // Immediately fetch and set user
+    // Immediately fetch and store user
     const userRes = await axios.get(
       "http://localhost:8000/api/accounts/profile/",
       {
@@ -36,10 +47,12 @@ export const AuthProvider = ({ children }) => {
       }
     );
     setUser(userRes.data);
+    localStorage.setItem("user", JSON.stringify(userRes.data)); // ✅ store for refresh
   };
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user"); // ✅ clear user data
     setUser(null);
     setToken(null);
   };
