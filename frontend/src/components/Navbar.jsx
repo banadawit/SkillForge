@@ -22,9 +22,7 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const isMentor = () => {
-    return user?.is_mentor || false;
-  };
+  const isMentor = () => user?.role === "mentor";
 
   return (
     <nav
@@ -150,9 +148,10 @@ const Navbar = () => {
               className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
               onClick={() => setIsOpen(false)}
             >
-              Skills
+              {isMentor() ? "My Skills" : "Browse Skills"}
             </Link>
           )}
+
           {isMentor() && (
             <Link
               to="/add-skill"
@@ -162,8 +161,17 @@ const Navbar = () => {
               Add Skill
             </Link>
           )}
+
           {user ? (
             <>
+              <Link
+                to={isMentor() ? "/sessions" : "/my-learning"}
+                className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
+                onClick={() => setIsOpen(false)}
+              >
+                {isMentor() ? "My Sessions" : "My Learning"}
+              </Link>
+
               <Link
                 to="/profile"
                 className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
@@ -171,6 +179,7 @@ const Navbar = () => {
               >
                 Profile
               </Link>
+
               <button
                 onClick={() => {
                   handleLogout();
@@ -190,6 +199,7 @@ const Navbar = () => {
               >
                 Login
               </Link>
+
               <Link
                 to="/register"
                 className="text-white bg-indigo-600 hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
