@@ -145,7 +145,7 @@ const Navbar = () => {
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-indigo-800">
           {user && (
             <Link
-              to="/skills"
+              to={isMentor() ? "/my-skills" : "/skills"}
               className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
               onClick={() => setIsOpen(false)}
             >
@@ -165,7 +165,7 @@ const Navbar = () => {
 
           {user ? (
             <>
-                {/* console.log("Navbar loaded. Mentor?", isMentor()); */}
+              {/* console.log("Navbar loaded. Mentor?", isMentor()); */}
               <Link
                 to={isMentor() ? "/my-sessions" : "/my-learning"}
                 className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
