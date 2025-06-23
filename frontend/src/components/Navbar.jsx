@@ -53,7 +53,8 @@ const Navbar = () => {
               {user ? (
                 <>
                   <Link
-                    to="/skills"
+                    // to="/skills"
+                    to={isMentor() ? "/my-skills" : "/skills"}
                     className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
                     {isMentor() ? "My Skills" : "Browse Skills"}
@@ -69,7 +70,7 @@ const Navbar = () => {
                   )}
 
                   <Link
-                    to={isMentor() ? "/sessions" : "/my-learning"}
+                    to={isMentor() ? "/my-sessions" : "/my-learning"}
                     className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
                     {isMentor() ? "My Sessions" : "My Learning"}
@@ -164,14 +165,14 @@ const Navbar = () => {
 
           {user ? (
             <>
+                {/* console.log("Navbar loaded. Mentor?", isMentor()); */}
               <Link
-                to={isMentor() ? "/sessions" : "/my-learning"}
+                to={isMentor() ? "/my-sessions" : "/my-learning"}
                 className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
                 onClick={() => setIsOpen(false)}
               >
                 {isMentor() ? "My Sessions" : "My Learning"}
               </Link>
-
               <Link
                 to="/profile"
                 className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
@@ -179,7 +180,6 @@ const Navbar = () => {
               >
                 Profile
               </Link>
-
               <button
                 onClick={() => {
                   handleLogout();
