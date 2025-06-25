@@ -28,8 +28,14 @@ const Login = () => {
     setError(null);
 
     try {
-      await login(form.username, form.password); // ✅ use context login
-      navigate("/skills");
+      const user = await login(form.username, form.password); // 👈 now it returns full user
+      console.log("Logged in user:", user);
+
+      if (user?.role === "mentor") {
+        navigate("/my-skills");
+      } else {
+        navigate("/skills");
+      }
     } catch (err) {
       setError("Invalid username or password. Please try again.");
       console.error(err);

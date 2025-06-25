@@ -53,7 +53,6 @@ const Navbar = () => {
               {user ? (
                 <>
                   <Link
-                    // to="/skills"
                     to={isMentor() ? "/my-skills" : "/skills"}
                     className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
@@ -66,6 +65,15 @@ const Navbar = () => {
                       className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                     >
                       Add Skill
+                    </Link>
+                  )}
+
+                  {isMentor() && (
+                    <Link
+                      to="/mentor-bookings"
+                      className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
+                    >
+                      Booking Requests
                     </Link>
                   )}
 
