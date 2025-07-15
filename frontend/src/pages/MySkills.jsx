@@ -62,7 +62,7 @@ const MySkills = () => {
         setLoading(true);
         await new Promise((resolve) => setTimeout(resolve, 500));
         setSkills(generateMockSkills());
-        toast.success("Skills loaded successfully");
+        // toast.success("Skills loaded successfully"); // Removed popup
       } catch (error) {
         toast.error("Failed to load skills");
       } finally {

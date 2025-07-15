@@ -48,6 +48,7 @@ export const AuthProvider = ({ children }) => {
     );
     setUser(userRes.data);
     localStorage.setItem("user", JSON.stringify(userRes.data)); // ✅ store for refresh
+    return userRes.data; // <-- return user object for role-based redirect
   };
 
   const logout = () => {
