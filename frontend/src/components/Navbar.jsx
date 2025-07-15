@@ -37,7 +37,7 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <Link
-              to="/"
+              //   to="/"
               className="text-2xl font-bold text-white hover:text-indigo-200 transition-colors duration-300 flex items-center"
             >
               <span className="bg-white text-indigo-600 px-2 py-1 rounded mr-2">

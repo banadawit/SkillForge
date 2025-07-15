@@ -14,6 +14,7 @@ import ProfilePage from "./pages/ProfilePage";
 import MySessions from "./pages/MySessions";
 import MySkills from "./pages/MySkills";
 import MentorBookings from "./pages/MentorBookings";
+import BookSessionPage from "./pages/BookSessionPage";
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/my-sessions" element={<MySessions />} />
           <Route path="/my-skills" element={<MySkills />} />
           <Route path="/mentor-bookings" element={<MentorBookings />} />
+          <Route path="/skills/:id/book" element={<BookSessionPage />} />
         </Routes>
         <ToastContainer /> {/* Add this line for the Toast notifications */}
       </AuthProvider>

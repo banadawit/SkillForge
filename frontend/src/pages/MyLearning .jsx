@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "../utils/axios";
-import { getUser } from "../utils/auth";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FiCalendar,
@@ -12,9 +10,11 @@ import {
   FiStar,
   FiDownload,
   FiChevronRight,
+  FiBookOpen,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
+import { getUser } from "../utils/auth";
 
 const MyLearning = () => {
   const [upcomingSessions, setUpcomingSessions] = useState([]);
@@ -156,12 +156,20 @@ const MyLearning = () => {
     navigate(`/feedback/${sessionId}`);
   };
 
-  const handleDownloadNotes = (sessionId) => {
-    toast.info("Downloading session notes...");
-    // Simulate download
-    setTimeout(() => {
-      toast.success("Notes downloaded successfully!");
-    }, 1500);
+  const handleDownloadNotes = (sessionId, type = "all") => {
+    toast.promise(
+      new Promise((resolve) => {
+        setTimeout(() => {
+          console.log(`Downloading ${type} notes for session ${sessionId}`);
+          resolve();
+        }, 1000);
+      }),
+      {
+        pending: `Preparing ${type === "all" ? "" : type + " "}notes...`,
+        success: `Notes downloaded successfully!`,
+        error: "Failed to download notes",
+      }
+    );
   };
 
   return (
@@ -258,96 +266,117 @@ const MyLearning = () => {
               upcomingSessions.map((session) => (
                 <motion.div
                   key={session.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200"
                 >
                   <div className="p-6">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                    <div className="flex flex-col md:flex-row justify-between gap-6">
                       <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {session.skill}
-                          </h3>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              session.status === "confirmed"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {session.status}
-                          </span>
-                        </div>
-
-                        <div className="mt-2 flex items-center text-gray-600">
-                          <FiUser className="mr-2" />
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-xl font-bold text-gray-900">
+                              {session.skill}
+                            </h3>
+                            <div className="flex items-center mt-1">
+                              <span
+                                className={`status-badge ${session.status}`}
+                              >
+                                {session.status}
+                              </span>
+                              {session.statusDetails && (
+                                <span className="text-xs text-gray-500 ml-2">
+                                  ({session.statusDetails})
+                                </span>
+                              )}
+                            </div>
+                          </div>
                           <Link
                             to={`/profile/${session.mentorId}`}
-                            className="hover:text-indigo-600 hover:underline"
+                            className="flex items-center text-indigo-600 hover:underline"
                           >
+                            <FiUser className="mr-1" />
                             {session.mentor}
                           </Link>
                         </div>
 
-                        <div className="mt-3 flex flex-wrap gap-4">
-                          <div className="flex items-center text-sm text-gray-500">
+                        {/* Enhanced Progress Tracking */}
+                        <div className="mt-4 space-y-3">
+                          <div className="flex items-center text-gray-600">
                             <FiCalendar className="mr-2" />
                             {new Date(session.date).toLocaleDateString(
                               "en-US",
                               {
-                                weekday: "short",
+                                weekday: "long",
                                 month: "short",
                                 day: "numeric",
                               }
                             )}
-                          </div>
-                          <div className="flex items-center text-sm text-gray-500">
+                            <span className="mx-2">•</span>
                             <FiClock className="mr-2" />
                             {session.time} ({session.duration})
                           </div>
+
+                          {/* Progress bar with materials */}
+                          {session.progress && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span>Progress</span>
+                                <span>
+                                  {session.progress.completed}/
+                                  {session.progress.total} sessions
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-indigo-600 h-2 rounded-full"
+                                  style={{
+                                    width: `${
+                                      (session.progress.completed /
+                                        session.progress.total) *
+                                      100
+                                    }%`,
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
-                        {session.progress && (
-                          <div className="mt-4">
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="font-medium">Progress:</span>
-                              <span>
-                                {session.progress.completed}/
-                                {session.progress.total} sessions
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2.5">
-                              <div
-                                className="bg-indigo-600 h-2.5 rounded-full"
-                                style={{
-                                  width: `${
-                                    (session.progress.completed /
-                                      session.progress.total) *
-                                    100
-                                  }%`,
-                                }}
-                              ></div>
-                            </div>
-                          </div>
-                        )}
+                        {/* Session preparation section */}
+                        <div className="mt-4">
+                          <button
+                            onClick={() =>
+                              navigate(`/session-prep/${session.id}`)
+                            }
+                            className="flex items-center text-indigo-600 hover:text-indigo-800 text-sm"
+                          >
+                            <FiBookOpen className="mr-2" />
+                            View preparation materials
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <div className="flex flex-col gap-2 w-full md:w-auto">
                         <button
                           onClick={() => handleCancelSession(session.id)}
-                          className="flex items-center justify-center px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+                          className="action-button danger"
                         >
                           <FiXCircle className="mr-2" />
-                          Cancel
+                          Cancel Session
                         </button>
                         <button
                           onClick={() => navigate(`/reschedule/${session.id}`)}
-                          className="flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="action-button secondary"
                         >
                           <FiEdit className="mr-2" />
                           Reschedule
+                        </button>
+                        <button
+                          onClick={() =>
+                            navigate(`/session-details/${session.id}`)
+                          }
+                          className="action-button primary"
+                        >
+                          View Details
                         </button>
                       </div>
                     </div>
@@ -355,15 +384,10 @@ const MyLearning = () => {
                 </motion.div>
               ))
             ) : (
-              <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-                <p className="text-gray-500">No upcoming sessions scheduled</p>
-                <Link
-                  to="/skills"
-                  className="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  Browse Skills <FiChevronRight className="ml-1" />
-                </Link>
-              </div>
+              <EnhancedEmptyState
+                type="upcoming"
+                onAction={() => navigate("/skills")}
+              />
             )}
           </div>
         ) : (
@@ -372,17 +396,21 @@ const MyLearning = () => {
               pastSessions.map((session) => (
                 <motion.div
                   key={session.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200"
                 >
                   <div className="p-6">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                    <div className="flex flex-col md:flex-row justify-between gap-6">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {session.skill}
-                        </h3>
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-xl font-bold text-gray-900">
+                            {session.skill}
+                          </h3>
+                          <div className="flex items-center">
+                            <span className={`status-badge ${session.status}`}>
+                              {session.status}
+                            </span>
+                          </div>
+                        </div>
 
                         <div className="mt-2 flex items-center text-gray-600">
                           <FiUser className="mr-2" />
@@ -394,80 +422,113 @@ const MyLearning = () => {
                           </Link>
                         </div>
 
-                        <div className="mt-3 flex flex-wrap gap-4">
-                          <div className="flex items-center text-sm text-gray-500">
+                        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center text-gray-600">
                             <FiCalendar className="mr-2" />
-                            {new Date(session.date).toLocaleDateString(
-                              "en-US",
-                              {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )}
+                            {new Date(session.date).toLocaleDateString()}
                           </div>
-                          <div className="flex items-center text-sm text-gray-500">
+                          <div className="flex items-center text-gray-600">
                             <FiClock className="mr-2" />
                             {session.duration}
                           </div>
                         </div>
 
+                        {/* Enhanced Feedback Section */}
                         {session.feedback ? (
-                          <div className="mt-4 flex items-center">
-                            <div className="flex items-center mr-4">
+                          <div className="mt-4 space-y-2">
+                            <div className="flex items-center">
                               {[...Array(5)].map((_, i) => (
                                 <FiStar
                                   key={i}
                                   className={`${
                                     i < session.feedback.rating
-                                      ? "text-yellow-400 fill-current"
+                                      ? "text-yellow-400 fill-yellow-400"
                                       : "text-gray-300"
-                                  }`}
+                                  } w-4 h-4`}
                                 />
                               ))}
+                              <span className="ml-2 text-sm font-medium">
+                                {session.feedback.rating}/5
+                              </span>
                             </div>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
                               "{session.feedback.comment}"
                             </p>
                           </div>
-                        ) : (
+                        ) : session.status === "completed" ? (
                           <button
                             onClick={() => handleLeaveFeedback(session.id)}
                             className="mt-4 flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                           >
-                            <FiEdit className="mr-1" /> Leave Feedback
+                            <FiEdit className="mr-2" />
+                            Leave Feedback
                           </button>
+                        ) : null}
+
+                        {/* Enhanced Materials Section */}
+                        {session.notesAvailable && (
+                          <div className="mt-4">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                              <FiDownload className="mr-2" />
+                              Session Materials
+                            </h4>
+                            <div className="flex flex-wrap gap-3">
+                              <button
+                                onClick={() =>
+                                  handleDownloadNotes(session.id, "slides")
+                                }
+                                className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center"
+                              >
+                                <FiDownload className="mr-1" /> Slides
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDownloadNotes(session.id, "exercises")
+                                }
+                                className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center"
+                              >
+                                <FiDownload className="mr-1" /> Exercises
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDownloadNotes(session.id, "recording")
+                                }
+                                className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center"
+                              >
+                                <FiDownload className="mr-1" /> Recording
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </div>
 
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <div className="flex flex-col gap-2 w-full md:w-auto">
                         <button
                           onClick={() =>
                             navigate(`/book-session/${session.mentorId}`)
                           }
-                          className="flex items-center justify-center px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg hover:bg-indigo-50 transition-colors"
+                          className="action-button primary"
                         >
                           Rebook Mentor
                         </button>
-                        {session.notesAvailable && (
-                          <button
-                            onClick={() => handleDownloadNotes(session.id)}
-                            className="flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            <FiDownload className="mr-2" />
-                            Notes
-                          </button>
-                        )}
+                        <button
+                          onClick={() =>
+                            navigate(`/similar-sessions/${session.skill}`)
+                          }
+                          className="action-button secondary"
+                        >
+                          Find Similar Sessions
+                        </button>
                       </div>
                     </div>
                   </div>
                 </motion.div>
               ))
             ) : (
-              <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-                <p className="text-gray-500">No past sessions found</p>
-              </div>
+              <EnhancedEmptyState
+                type="past"
+                onAction={() => navigate("/skills")}
+              />
             )}
           </div>
         )}
@@ -475,5 +536,27 @@ const MyLearning = () => {
     </div>
   );
 };
+
+// Additional component for empty states
+const EnhancedEmptyState = ({ type, onAction }) => (
+  <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
+    <FiCalendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+    <h3 className="text-lg font-medium text-gray-900 mb-1">
+      No {type === "upcoming" ? "upcoming" : "past"} sessions
+    </h3>
+    <p className="text-gray-500 mb-4">
+      {type === "upcoming"
+        ? "Book a session to start learning"
+        : "Your completed sessions will appear here"}
+    </p>
+    <button
+      onClick={onAction}
+      className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+    >
+      {type === "upcoming" ? "Browse Skills" : "Find Mentors"}
+      <FiChevronRight className="ml-1" />
+    </button>
+  </div>
+);
 
 export default MyLearning;
