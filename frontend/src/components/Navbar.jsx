@@ -8,6 +8,8 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoutFromMobile, setLogoutFromMobile] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -92,7 +94,10 @@ const Navbar = () => {
                   </Link>
 
                   <button
-                    onClick={handleLogout}
+                    onClick={() => {
+                      setShowLogoutModal(true);
+                      setLogoutFromMobile(false);
+                    }}
                     className="text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 flex items-center"
                   >
                     Logout
@@ -190,8 +195,8 @@ const Navbar = () => {
               </Link>
               <button
                 onClick={() => {
-                  handleLogout();
-                  setIsOpen(false);
+                  setShowLogoutModal(true);
+                  setLogoutFromMobile(true);
                 }}
                 className="w-full text-left text-white bg-red-600 hover:bg-red-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
               >
@@ -219,6 +224,38 @@ const Navbar = () => {
           )}
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-xs text-center animate-fadeIn">
+            <h2 className="text-xl font-bold mb-4 text-gray-800">
+              Confirm Logout
+            </h2>
+            <p className="mb-6 text-gray-600">
+              Are you sure you want to logout?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium"
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white font-medium"
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  if (logoutFromMobile) setIsOpen(false);
+                  handleLogout();
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
