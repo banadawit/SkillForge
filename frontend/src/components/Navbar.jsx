@@ -1,19 +1,23 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext"; // Import useAuth
 import { useState, useEffect } from "react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  // Destructure 'user', 'logout', 'isAuthenticated', and 'isMentor' from useAuth()
+  const { user, logout, isAuthenticated, isMentor } = useAuth(); // ⭐ CORRECTED: Destructure isMentor directly
+
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoutFromMobile, setLogoutFromMobile] = useState(false);
 
+  // handleLogout now just calls logout from context, no need to navigate here
+  // as the context's logout already handles navigation to /login.
   const handleLogout = () => {
-    logout();
-    navigate("/login");
+    logout(); // This also navigates to /login per AuthContext.js
+    // No need for navigate("/login") here anymore.
   };
 
   useEffect(() => {
@@ -24,7 +28,9 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const isMentor = () => user?.role === "mentor";
+  // ⭐ REMOVED: No longer need this local isMentor function
+  // const isMentor = () => user?.role === "mentor";
+
 
   return (
     <nav
@@ -39,7 +45,7 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <Link
-              //   to="/"
+              to={isAuthenticated ? (isMentor() ? "/my-skills" : "/skills") : "/"} // ⭐ IMPROVED: Link to relevant page or home if not logged in
               className="text-2xl font-bold text-white hover:text-indigo-200 transition-colors duration-300 flex items-center"
             >
               <span className="bg-white text-indigo-600 px-2 py-1 rounded mr-2">
@@ -52,16 +58,18 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-4">
-              {user ? (
+              {/* ⭐ CORRECTED: Use isAuthenticated from context */}
+              {isAuthenticated ? (
                 <>
                   <Link
+                    // ⭐ CORRECTED: Call isMentor() directly from context
                     to={isMentor() ? "/my-skills" : "/skills"}
                     className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
                     {isMentor() ? "My Skills" : "Browse Skills"}
                   </Link>
 
-                  {isMentor() && (
+                  {isMentor() && ( // ⭐ CORRECTED: Call isMentor()
                     <Link
                       to="/add-skill"
                       className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
@@ -70,7 +78,7 @@ const Navbar = () => {
                     </Link>
                   )}
 
-                  {isMentor() && (
+                  {isMentor() && ( // ⭐ CORRECTED: Call isMentor()
                     <Link
                       to="/mentor-bookings"
                       className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
@@ -80,6 +88,7 @@ const Navbar = () => {
                   )}
 
                   <Link
+                    // ⭐ CORRECTED: Call isMentor()
                     to={isMentor() ? "/my-sessions" : "/my-learning"}
                     className="text-white hover:bg-indigo-800 hover:text-indigo-100 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300"
                   >
@@ -107,6 +116,7 @@ const Navbar = () => {
                   </button>
                 </>
               ) : (
+                // Links for unauthenticated users
                 <>
                   <Link
                     to="/skills"
@@ -156,36 +166,47 @@ const Navbar = () => {
         }`}
       >
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-indigo-800">
-          {user && (
-            <Link
-              to={isMentor() ? "/my-skills" : "/skills"}
-              className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
-              onClick={() => setIsOpen(false)}
-            >
-              {isMentor() ? "My Skills" : "Browse Skills"}
-            </Link>
-          )}
-
-          {isMentor() && (
-            <Link
-              to="/add-skill"
-              className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
-              onClick={() => setIsOpen(false)}
-            >
-              Add Skill
-            </Link>
-          )}
-
-          {user ? (
+          {/* ⭐ CORRECTED: Use isAuthenticated for mobile menu conditional rendering */}
+          {isAuthenticated && (
             <>
-              {/* console.log("Navbar loaded. Mentor?", isMentor()); */}
               <Link
-                to={isMentor() ? "/my-sessions" : "/my-learning"}
+                to={isMentor() ? "/my-skills" : "/skills"} // ⭐ CORRECTED: Call isMentor()
+                className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
+                onClick={() => setIsOpen(false)}
+              >
+                {isMentor() ? "My Skills" : "Browse Skills"}
+              </Link>
+
+              {isMentor() && ( // ⭐ CORRECTED: Call isMentor()
+                <Link
+                  to="/add-skill"
+                  className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Add Skill
+                </Link>
+              )}
+
+              {/* ⭐ ADDED: Mentor-specific link for Booking Requests in mobile menu */}
+              {isMentor() && (
+                <Link
+                  to="/mentor-bookings"
+                  className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Booking Requests
+                </Link>
+              )}
+
+
+              <Link
+                to={isMentor() ? "/my-sessions" : "/my-learning"} // ⭐ CORRECTED: Call isMentor()
                 className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
                 onClick={() => setIsOpen(false)}
               >
                 {isMentor() ? "My Sessions" : "My Learning"}
               </Link>
+
               <Link
                 to="/profile"
                 className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
@@ -193,18 +214,30 @@ const Navbar = () => {
               >
                 Profile
               </Link>
+
               <button
                 onClick={() => {
                   setShowLogoutModal(true);
                   setLogoutFromMobile(true);
+                  // setIsOpen(false); // Modal will cover, so can close mobile menu here if desired
                 }}
                 className="w-full text-left text-white bg-red-600 hover:bg-red-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
               >
                 Logout
               </button>
             </>
-          ) : (
+          )}
+
+          {/* Links for unauthenticated users in mobile menu */}
+          {!isAuthenticated && (
             <>
+              <Link
+                to="/skills"
+                className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
+                onClick={() => setIsOpen(false)}
+              >
+                Browse Skills
+              </Link>
               <Link
                 to="/login"
                 className="text-white hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
@@ -212,7 +245,6 @@ const Navbar = () => {
               >
                 Login
               </Link>
-
               <Link
                 to="/register"
                 className="text-white bg-indigo-600 hover:bg-indigo-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
@@ -247,7 +279,7 @@ const Navbar = () => {
                 onClick={() => {
                   setShowLogoutModal(false);
                   if (logoutFromMobile) setIsOpen(false);
-                  handleLogout();
+                  handleLogout(); // Calls the handleLogout which now uses context.logout()
                 }}
               >
                 Logout

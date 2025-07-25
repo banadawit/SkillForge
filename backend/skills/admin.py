@@ -4,9 +4,15 @@ from .models import Availability
 
 @admin.register(Skill)
 class SkillAdmin(admin.ModelAdmin):
-    list_display = ('title', 'mentor', 'price_per_session')
-    search_fields = ('title', 'mentor__username')
-    list_filter = ('mentor',)
+    list_display = ('name', 'price', 'get_mentor_username')
+    list_filter = ('price',)
+    search_fields = ('name', 'profile__user__username')
+    # Add fields to manage in the admin form
+    fields = ('profile', 'name', 'price')
+
+    def get_mentor_username(self, obj):
+        return obj.profile.user.username if obj.profile and obj.profile.user else 'N/A'
+    get_mentor_username.short_description = 'Mentor' # Column header in list_display
 
 @admin.register(Availability)
 class AvailabilityAdmin(admin.ModelAdmin):

@@ -6,3 +6,4 @@ router.register(r'', SessionBookingViewSet, basename='booking')
 router.register(r'reviews', ReviewViewSet, basename='review')   
 
 urlpatterns = router.urls
+

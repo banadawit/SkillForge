@@ -1,10 +1,12 @@
-import { useState } from "react";
+// src/components/Login.jsx
+import { useState, useEffect } from "react"; // Ensure useEffect is imported
 import { useNavigate } from "react-router-dom";
 import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook } from "react-icons/fa";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext"; // Import useAuth hook
+import { toast } from "react-toastify"; // Ensure toast is imported for direct use
 
 const Login = () => {
   const [form, setForm] = useState({ username: "", password: "" });
@@ -13,32 +15,60 @@ const Login = () => {
     google: false,
     facebook: false,
   });
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const { login } = useAuth(); // ✅ use AuthContext login
+
+  // Get login function, isAuthenticated status, current user (decoded JWT payload),
+  // and isMentor function from the AuthContext.
+  const { login, user: authUser, isAuthenticated, isMentor: isAuthMentor, loading: authContextLoading } = useAuth();
+
+  // ⭐ IMPORTANT: This useEffect handles redirection after authentication status is determined.
+  // It ensures users are redirected if they are already logged in when trying to access /login,
+  // or after a successful login.
+  useEffect(() => {
+    // Only attempt to redirect if AuthContext is *not* currently loading its initial auth state
+    // and the user is authenticated.
+    if (!authContextLoading && isAuthenticated) {
+      // Use the isAuthMentor() function from the context to determine the role
+      if (isAuthMentor()) { // isAuthMentor() properly checks authUser.is_mentor from JWT
+        navigate("/my-skills"); // Mentor dashboard
+      } else {
+        navigate("/skills"); // Learner dashboard
+      }
+    }
+  }, [authContextLoading, isAuthenticated, isAuthMentor, navigate]); // Dependencies: Re-run if auth status or loading state changes
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    if (error) setError(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
 
     try {
-      const user = await login(form.username, form.password); // 👈 now it returns full user
-      console.log("Logged in user:", user);
+      // The 'login' function from useAuth() calls loginUser from auth.js,
+      // which returns the DECODED JWT payload (e.g., { user_id: 1, username: 'test', is_mentor: true, ... }).
+      const loggedInUser = await login(form.username, form.password);
 
-      if (user?.role === "mentor") {
-        navigate("/my-skills");
+      // This 'if (loggedInUser)' block handles the redirection *immediately*
+      // after a successful login API call.
+      if (loggedInUser) {
+        // Use loggedInUser.is_mentor directly from the JWT payload
+        if (loggedInUser.is_mentor) {
+          navigate("/my-skills"); // Navigate to mentor-specific path
+        } else {
+          navigate("/skills"); // Navigate to learner-specific path
+        }
       } else {
-        navigate("/skills");
+        // This 'else' block should be rare if 'login' function handles toasts and throws errors correctly.
+        // It's a fallback if login utility returns null without an error.
+        toast.error("Login failed. Please check your credentials.");
       }
     } catch (err) {
-      setError("Invalid username or password. Please try again.");
-      console.error(err);
+      // The 'login' function in AuthContext (and auth.js) is designed to handle
+      // error toasts internally. This catch block can be for general logging
+      // or if you want to display specific component-level error messages.
+      console.error("Login error caught in component:", err);
     } finally {
       setIsLoading(false);
     }
@@ -46,8 +76,20 @@ const Login = () => {
 
   const handleSocialLogin = (provider) => {
     setSocialLoading((prev) => ({ ...prev, [provider]: true }));
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/${provider}/`;
+    toast.info(`Social login with ${provider} is not yet implemented.`);
+    setSocialLoading((prev) => ({ ...prev, [provider]: false }));
   };
+
+  // Prevent rendering the login form if AuthContext is still processing initial auth
+  // OR if the user is already authenticated (and useEffect will redirect them).
+  if (authContextLoading || isAuthenticated) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <p className="ml-4 text-gray-700">Loading user data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center p-4 pt-16">
@@ -68,12 +110,6 @@ const Login = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
             {/* Social Login */}
             <div className="space-y-3">
               <motion.button
@@ -93,12 +129,12 @@ const Login = () => {
                       r="10"
                       stroke="currentColor"
                       strokeWidth="4"
-                    />
+                    ></circle>
                     <path
                       className="opacity-75"
                       fill="currentColor"
                       d="M4 12a8 8 0 018-8V0..."
-                    />
+                    ></path>
                   </svg>
                 ) : (
                   <>
@@ -125,12 +161,12 @@ const Login = () => {
                       r="10"
                       stroke="currentColor"
                       strokeWidth="4"
-                    />
+                    ></circle>
                     <path
                       className="opacity-75"
                       fill="currentColor"
                       d="M4 12a8 8 0 018-8V0..."
-                    />
+                    ></path>
                   </svg>
                 ) : (
                   <>
@@ -233,12 +269,12 @@ const Login = () => {
                     r="10"
                     stroke="currentColor"
                     strokeWidth="4"
-                  />
+                  ></circle>
                   <path
                     className="opacity-75"
                     fill="currentColor"
                     d="M4 12a8 8 0 018-8V0..."
-                  />
+                  ></path>
                 </svg>
               ) : (
                 "Sign in"

@@ -4,13 +4,14 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css"; // Import the toast styles
 import Register from "./pages/Register";
 import Login from "./pages/Login";
-import Profile from "./pages/ProfilePage";
+// import Profile from "./pages/ProfilePage";
 import Navbar from "./components/Navbar";
 import SkillList from "./pages/SkillList";
 import AddSkill from "./pages/AddSkill";
 import Home from "./pages/Home";
 import MyLearning from "./pages/MyLearning ";
 import ProfilePage from "./pages/ProfilePage";
+
 import MySessions from "./pages/MySessions";
 import MySkills from "./pages/MySkills";
 import MentorBookings from "./pages/MentorBookings";

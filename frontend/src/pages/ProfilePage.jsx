@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
-import { getUser, isMentor } from "../utils/auth";
+import { useState, useEffect, useCallback } from "react";
+// Import 'api' from your auth utilities for all authenticated requests
+// Import 'useAuth' from context for user state and logout function
+import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
   FiUser,
@@ -14,131 +16,225 @@ import {
   FiX,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
+import { api } from "../utils/auth"; // Import the configured Axios instance
+
+// const API_BASE_URL = "http://localhost:8000/api"; // Not strictly needed with 'api' instance's baseURL
 
 const ProfilePage = () => {
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [skills, setSkills] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true); // Manually managing loading state for fetches
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({});
   const [newSkill, setNewSkill] = useState("");
   const [newSkillPrice, setNewSkillPrice] = useState("");
-  const navigate = useNavigate();
-  const user = getUser();
 
-  useEffect(() => {
-    if (!user) {
-      navigate("/login");
+  const navigate = useNavigate();
+  // Get user and logout from AuthContext
+  const {
+    user,
+    isAuthenticated,
+    isMentor: isCurrentUserMentor,
+    logout,
+  } = useAuth();
+
+  // Remove getAuthHeaders as 'api' instance handles headers automatically
+
+  const fetchData = useCallback(async () => {
+    // Check authentication status from context.
+    // AuthProvider's useEffect should handle redirecting if not authenticated.
+    if (!isAuthenticated) {
+      // If not authenticated, context will handle navigation.
+      // We can just stop loading here or let the context's redirect take over.
+      setLoading(false);
+      // Optionally, you might want a toast if they landed here without being logged in
+      // toast.error("Please log in to view your profile.");
       return;
     }
 
-    // Simulate API call with timeout
-    const timer = setTimeout(() => {
-      const dummyProfile = {
-        fullName: user.username || "John Doe",
-        email: user.email || "john.doe@example.com",
-        bio: isMentor()
-          ? "Experienced software engineer with 5+ years of experience in web development. Passionate about teaching and helping others grow."
-          : "Aspiring developer eager to learn new technologies and improve coding skills.",
-        role: isMentor() ? "mentor" : "learner",
-        skills: isMentor()
-          ? [
-              { id: 1, name: "React", price: 50 },
-              { id: 2, name: "JavaScript", price: 45 },
-              { id: 3, name: "Node.js", price: 55 },
-            ]
-          : [],
-        reviews: isMentor()
-          ? [
-              {
-                id: 1,
-                rating: 5,
-                comment:
-                  "Great mentor! Explained complex concepts in an easy-to-understand way.",
-                studentName: "Alice Johnson",
-                date: "2023-06-15",
-              },
-              {
-                id: 2,
-                rating: 4,
-                comment: "Very knowledgeable and patient. Would recommend!",
-                studentName: "Bob Smith",
-                date: "2023-05-22",
-              },
-            ]
-          : [],
-        sessionCount: isMentor() ? 12 : 5,
-        skillsLearned: isMentor()
-          ? []
-          : [
-              { id: 1, name: "React Fundamentals" },
-              { id: 2, name: "JavaScript ES6+" },
-              { id: 3, name: "CSS Grid" },
-            ],
-        topSkills: isMentor()
-          ? []
-          : [
-              { id: 1, name: "JavaScript" },
-              { id: 2, name: "React" },
-              { id: 3, name: "HTML/CSS" },
-            ],
-        availability: isMentor() ? "Weekdays, 9am-5pm" : null,
+    setLoading(true); // Start loading before fetching
+    try {
+      // 1. Fetch User Profile Data using 'api' instance (Axios)
+      const profileResponse = await api.get("/profile/"); // Use api.get() for GET requests
+      const profileData = profileResponse.data; // Axios puts response data in .data
+
+      const transformedProfile = {
+        fullName: profileData.full_name,
+        email: profileData.email,
+        bio: profileData.profile.bio,
+        role: profileData.profile.role,
+        availability: profileData.profile.availability,
+        // These fields would typically come from specific models/calculations in Django
+        sessionCount: profileData.profile.session_count || 0, // Placeholder
+        skillsLearned: profileData.profile.skills_learned || [], // Placeholder
+        topSkills: profileData.profile.top_skills || [], // Placeholder
       };
+      setProfile(transformedProfile);
+      setFormData({
+        fullName: transformedProfile.fullName,
+        email: transformedProfile.email,
+        bio: transformedProfile.bio,
+        availability: transformedProfile.availability,
+      });
 
-      setProfile(dummyProfile);
-      setFormData(dummyProfile);
-      setLoading(false);
-    }, 800);
+      // 2. Fetch Skills (if mentor)
+      // Use isCurrentUserMentor from useAuth context, as it's reliable
+      if (isCurrentUserMentor) {
+        // Use the context's isMentor flag
+        const skillsResponse = await api.get("/skills/");
+        setSkills(skillsResponse.data);
+      } else {
+        setSkills([]); // Clear skills if not a mentor
+      }
 
-    return () => clearTimeout(timer);
-  }, [user, navigate]);
+      // 3. Fetch Reviews
+      const reviewsResponse = await api.get("/reviews/");
+      setReviews(reviewsResponse.data);
+    } catch (error) {
+      console.error(
+        "Error fetching data:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to load profile data.";
+      toast.error(errorMessage);
+      // If error is due to auth (interceptor might have already handled it by redirecting),
+      // ensure local state is cleared and navigate if not already.
+      if (
+        error.message.includes("Session expired") ||
+        error.message.includes("Authentication required")
+      ) {
+        logout(); // Call logout from context which also navigates
+      }
+    } finally {
+      setLoading(false); // End loading regardless of success or failure
+    }
+  }, [isAuthenticated, isCurrentUserMentor, logout, navigate]); // Add isAuthenticated to dependencies
+
+  useEffect(() => {
+    // Only fetch data if authenticated to prevent unnecessary calls before user is known
+    // The loading state of AuthProvider should handle initial render.
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [fetchData, isAuthenticated]); // isAuthenticated is a dependency to re-run if auth state changes
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate API call
-    setTimeout(() => {
-      setProfile(formData);
-      setEditMode(false);
-      toast.success("Profile updated successfully (simulated)");
-    }, 500);
-  };
+    try {
+      // Use api.patch for PATCH requests
+      const response = await api.patch("/profile/", {
+        profile: {
+          bio: formData.bio,
+          availability: formData.availability,
+        },
+      });
 
-  const handleAddSkill = () => {
-    if (!newSkill.trim()) return;
-
-    // Simulate API call
-    setTimeout(() => {
-      const newSkillObj = {
-        id: Math.max(0, ...profile.skills.map((s) => s.id)) + 1,
-        name: newSkill,
-        price: Number(newSkillPrice) || 0,
-      };
-
+      const updatedProfileData = response.data; // Axios data is in .data
       setProfile((prev) => ({
         ...prev,
-        skills: [...prev.skills, newSkillObj],
+        bio: updatedProfileData.profile.bio,
+        availability: updatedProfileData.profile.availability,
       }));
+      setEditMode(false);
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      console.error(
+        "Error updating profile:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to update profile.";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleAddSkill = async () => {
+    if (!newSkill.trim() || isNaN(parseFloat(newSkillPrice))) {
+      toast.error("Please enter a valid skill name and price.");
+      return;
+    }
+
+    try {
+      // Use api.post for POST requests
+      const response = await api.post("/skills/", {
+        name: newSkill,
+        price: parseFloat(newSkillPrice),
+      });
+
+      const addedSkill = response.data; // Axios data is in .data
+      setSkills((prev) => [...prev, addedSkill]);
       setNewSkill("");
       setNewSkillPrice("");
-      toast.success("Skill added (simulated)");
-    }, 300);
+      toast.success("Skill added successfully!");
+    } catch (error) {
+      console.error(
+        "Error adding skill:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Skill could not be added.";
+      toast.error(errorMessage);
+    }
   };
 
-  const handleRemoveSkill = (skillId) => {
-    // Simulate API call
-    setTimeout(() => {
-      setProfile((prev) => ({
-        ...prev,
-        skills: prev.skills.filter((skill) => skill.id !== skillId),
-      }));
-      toast.success("Skill removed (simulated)");
-    }, 300);
+  const handleRemoveSkill = async (skillId) => {
+    try {
+      // Use api.delete for DELETE requests
+      await api.delete(`/skills/${skillId}/`); // Axios returns empty data for delete, so no .data
+
+      setSkills((prev) => prev.filter((skill) => skill.id !== skillId));
+      toast.success("Skill removed successfully!");
+    } catch (error) {
+      console.error(
+        "Error removing skill:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to remove skill.";
+      toast.error(errorMessage);
+    }
   };
 
+  const handleBecomeMentor = async () => {
+    try {
+      // Use api.post for POST requests
+      await api.post("/become-mentor/");
+
+      toast.success(
+        "You are now a mentor! Please log out and log back in to see changes."
+      );
+      logout(); // Call logout from AuthContext which handles navigation
+    } catch (error) {
+      console.error(
+        "Error becoming mentor:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to become mentor.";
+      toast.error(errorMessage);
+    }
+  };
+
+  // Render loading spinner from this component
+  // If useAuth().loading is true, AuthProvider will show a global spinner.
+  // This 'loading' state here is for the component's *own* data fetching.
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -147,8 +243,13 @@ const ProfilePage = () => {
     );
   }
 
+  // If profile is null after loading, it means data fetch failed or user isn't authenticated
   if (!profile) {
-    return <div className="text-center py-12">Failed to load profile</div>;
+    return (
+      <div className="text-center py-12">
+        Failed to load profile or not authenticated.
+      </div>
+    );
   }
 
   return (
@@ -188,21 +289,11 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="text-center">
-                  {editMode ? (
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      className="text-xl font-bold text-center mb-1 border rounded p-1 w-full"
-                    />
-                  ) : (
-                    <h2 className="text-xl font-bold text-gray-900">
-                      {profile.fullName}
-                    </h2>
-                  )}
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {profile.fullName}
+                  </h2>
                   <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 mt-2">
-                    {isMentor() ? "Mentor" : "Learner"}
+                    {isCurrentUserMentor ? "Mentor" : "Learner"}
                   </div>
                 </div>
               </div>
@@ -229,7 +320,7 @@ const ProfilePage = () => {
                   )}
                 </div>
 
-                {/* Contact Info */}
+                {/* Contact Info (Email is read-only) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div>
                     <h3 className="text-sm font-medium text-gray-500 mb-1">
@@ -237,23 +328,13 @@ const ProfilePage = () => {
                     </h3>
                     <div className="flex items-center">
                       <FiMail className="text-gray-400 mr-2" />
-                      {editMode ? (
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          className="border rounded p-1 flex-1"
-                        />
-                      ) : (
-                        <p className="text-gray-900">{profile.email}</p>
-                      )}
+                      <p className="text-gray-900">{profile.email}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Mentor-Specific Sections */}
-                {isMentor() && (
+                {isCurrentUserMentor && (
                   <>
                     {/* Skills Section */}
                     <div className="mb-8">
@@ -261,8 +342,8 @@ const ProfilePage = () => {
                         <FiAward className="mr-2" /> Skills Offered
                       </h3>
                       <div className="flex flex-wrap gap-2 mb-3">
-                        {profile.skills?.length > 0 ? (
-                          profile.skills.map((skill) => (
+                        {skills?.length > 0 ? (
+                          skills.map((skill) => (
                             <div
                               key={skill.id}
                               className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
@@ -270,7 +351,7 @@ const ProfilePage = () => {
                               {skill.name}
                               {skill.price > 0 && (
                                 <span className="ml-1">
-                                  (${skill.price}/hr)
+                                  (${parseFloat(skill.price).toFixed(2)}/hr)
                                 </span>
                               )}
                               {editMode && (
@@ -305,6 +386,7 @@ const ProfilePage = () => {
                             placeholder="Price per hour"
                             className="w-24 border rounded p-2"
                             min="0"
+                            step="0.01"
                           />
                           <button
                             onClick={handleAddSkill}
@@ -345,7 +427,7 @@ const ProfilePage = () => {
                 )}
 
                 {/* Learner-Specific Sections */}
-                {!isMentor() && (
+                {!isCurrentUserMentor && (
                   <>
                     <div className="mb-8">
                       <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
@@ -410,42 +492,45 @@ const ProfilePage = () => {
         </div>
 
         {/* Reviews Section for Mentors */}
-        {isMentor() && profile.reviews?.length > 0 && (
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Student Reviews
-              </h2>
-            </div>
-            <div className="divide-y divide-gray-200">
-              {profile.reviews.map((review) => (
-                <div key={review.id} className="p-6">
-                  <div className="flex items-center mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <FiStar
-                        key={i}
-                        className={`${
-                          i < review.rating
-                            ? "text-yellow-400 fill-current"
-                            : "text-gray-300"
-                        }`}
-                        size={18}
-                      />
-                    ))}
+        {isCurrentUserMentor &&
+          reviews?.length > 0 && ( // Use separate 'reviews' state
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              <div className="px-6 py-5 border-b border-gray-200">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Student Reviews
+                </h2>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {reviews.map((review) => (
+                  <div key={review.id} className="p-6">
+                    <div className="flex items-center mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <FiStar
+                          key={i}
+                          className={`${
+                            i < review.rating
+                              ? "text-yellow-400 fill-current"
+                              : "text-gray-300"
+                          }`}
+                          size={18}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-gray-700 mb-2">"{review.comment}"</p>
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>- {review.student_name}</span>
+                      <span>
+                        {new Date(review.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-gray-700 mb-2">"{review.comment}"</p>
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>- {review.studentName}</span>
-                    <span>{new Date(review.date).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Become Mentor Option for Learners */}
-        {!isMentor() && (
+        {!isCurrentUserMentor && (
           <div className="mt-8 bg-white shadow rounded-lg overflow-hidden">
             <div className="p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -455,7 +540,7 @@ const ProfilePage = () => {
                 Share your knowledge and earn money by mentoring others
               </p>
               <button
-                onClick={() => navigate("/become-mentor")}
+                onClick={handleBecomeMentor}
                 className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
               >
                 Apply Now <FiChevronRight className="ml-1" />
