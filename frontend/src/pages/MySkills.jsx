@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiPlus,
@@ -10,108 +10,142 @@ import {
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
+import { api } from "../utils/auth"; // Import the configured Axios instance
+import { useAuth } from "../context/AuthContext"; // Import useAuth hook
 
 const MySkills = () => {
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user, isAuthenticated, isMentor, logout } = useAuth(); // Get auth state from context
 
-  const generateMockSkills = () => [
-    {
-      id: 1,
-      name: "Advanced React Patterns",
-      category: "Frontend Development",
-      level: "Expert",
-      rate: 45,
-      sessionsCompleted: 28,
-      avgRating: 4.9,
-      description:
-        "State management, performance optimization, and design patterns.",
-      tags: ["Hooks", "Context API", "Memoization"],
-      active: true,
-    },
-    {
-      id: 2,
-      name: "UI/UX Career Coaching",
-      category: "Career Growth",
-      rate: 75,
-      level: "Advanced",
-      sessionsCompleted: 15,
-      avgRating: 5.0,
-      description: "Portfolio reviews and interview preparation.",
-      tags: ["Portfolio", "Interviews"],
-      active: true,
-    },
-    {
-      id: 3,
-      name: "Python Data Science",
-      category: "Data Analysis",
-      rate: 60,
-      level: "Intermediate",
-      sessionsCompleted: 0,
-      avgRating: null,
-      description: "Pandas, NumPy fundamentals.",
-      tags: ["Pandas", "Data Cleaning"],
-      active: false,
-    },
-  ];
+  const fetchSkills = useCallback(async () => {
+    // Ensure user is authenticated and is a mentor before fetching skills
+    if (!isAuthenticated || !isMentor()) {
+      toast.error("You must be logged in as a mentor to view this page.");
+      logout(); // Log out and redirect to login
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Use the 'api' instance for authenticated GET request to /api/skills/
+      const response = await api.get("/skills/");
+      // Axios puts the response data in the .data property
+      setSkills(response.data);
+    } catch (error) {
+      console.error(
+        "Error fetching skills:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to load skills.";
+      toast.error(errorMessage);
+      // If 401, interceptor should handle logout, but fallback here
+      if (error.response?.status === 401) {
+        logout();
+      }
+    } finally {
+      setLoading(false); // End loading regardless of success or failure
+    }
+  }, [isAuthenticated, isMentor, logout]); // Dependencies for useCallback
 
   useEffect(() => {
-    const fetchSkills = async () => {
-      try {
-        setLoading(true);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setSkills(generateMockSkills());
-        // toast.success("Skills loaded successfully"); // Removed popup
-      } catch (error) {
-        toast.error("Failed to load skills");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchSkills();
-  }, []);
+  }, [fetchSkills]); // Dependency array for useEffect
 
   const handleAddSkill = () => {
-    const newSkill = {
-      id: skills.length + 1,
-      name: "New Skill",
-      category: "General",
-      level: "Beginner",
-      rate: 50,
-      sessionsCompleted: 0,
-      avgRating: null,
-      description: "New skill description",
-      tags: [],
-      active: false,
-    };
-    setSkills([...skills, newSkill]);
-    toast.info("New mock skill added");
+    // Navigate to a dedicated "Add Skill" form page
+    navigate("/add-skill");
   };
 
-  const handleDelete = (id) => {
-    setSkills(skills.filter((s) => s.id !== id));
-    toast.success("Skill deleted");
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this skill?")) {
+      return;
+    }
+    try {
+      // Use api.delete for DELETE request to /api/skills/:id/
+      await api.delete(`/skills/${id}/`);
+      setSkills(skills.filter((s) => s.id !== id)); // Optimistically update UI
+      toast.success("Skill deleted successfully.");
+    } catch (error) {
+      console.error(
+        "Error deleting skill:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to delete skill.";
+      toast.error(errorMessage);
+    }
   };
 
-  const handleToggleActive = (id) => {
-    setSkills(
-      skills.map((s) => (s.id === id ? { ...s, active: !s.active } : s))
-    );
+  const handleToggleActive = async (id) => {
+    // This functionality now dynamically updates the 'active' status on the backend
+    const skillToUpdate = skills.find((s) => s.id === id);
+    if (!skillToUpdate) return;
+
+    try {
+      // Call API to update 'active' status using PATCH request
+      const response = await api.patch(`/skills/${id}/`, {
+        active: !skillToUpdate.active,
+      });
+      // Update the skills state with the actual data from the backend response
+      setSkills(skills.map((s) => (s.id === id ? response.data : s)));
+      toast.success(
+        `Skill "${response.data.name}" ${
+          response.data.active ? "activated" : "deactivated"
+        }.`
+      );
+    } catch (error) {
+      console.error(
+        "Error toggling skill active status:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to toggle skill status.";
+      toast.error(errorMessage);
+    }
   };
 
+  // Calculate average rate based on 'price' field from backend
   const averageRate =
     skills.length > 0
       ? Math.round(
-          skills.reduce((acc, cur) => acc + cur.rate, 0) / skills.length
+          skills.reduce((acc, cur) => acc + parseFloat(cur.price || 0), 0) /
+            skills.length
         )
       : 0;
 
+  // Render loading spinner while data is being fetched
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex justify-center items-center h-64 pt-20">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  // Display message if no skills are found after loading
+  if (skills.length === 0 && !loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-6 pt-20 text-center">
+        <h1 className="text-3xl font-bold text-gray-800 mb-4">
+          My Teaching Skills
+        </h1>
+        <p className="text-gray-600 mb-6">You haven't added any skills yet.</p>
+        <button
+          onClick={handleAddSkill}
+          className="flex items-center mx-auto px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-lg font-medium"
+        >
+          <FiPlus className="mr-2" />
+          Add Your First Skill
+        </button>
       </div>
     );
   }
@@ -137,7 +171,7 @@ const MySkills = () => {
         />
         <StatCard
           title="Active Skills"
-          value={skills.filter((s) => s.active).length}
+          value={skills.filter((s) => s.active).length} // 'active' now comes from backend
           icon={<FiStar />}
         />
         <StatCard
@@ -152,7 +186,7 @@ const MySkills = () => {
           <SkillCard
             key={skill.id}
             skill={skill}
-            onEdit={() => navigate(`/skills/edit/${skill.id}`)}
+            onEdit={() => navigate(`/skills/edit/${skill.id}`)} // Navigate to edit page
             onDelete={() => handleDelete(skill.id)}
             onToggleActive={() => handleToggleActive(skill.id)}
           />
@@ -161,6 +195,8 @@ const MySkills = () => {
     </div>
   );
 };
+
+// --- Helper Components ---
 
 const StatCard = ({ title, value, icon }) => (
   <div className="bg-white rounded shadow border p-4">
@@ -184,49 +220,60 @@ const SkillCard = ({ skill, onEdit, onDelete, onToggleActive }) => (
           <div>
             <h3 className="text-xl font-bold text-gray-800">
               {skill.name}
-              {skill.active && (
+              {skill.active && ( // 'active' reflects backend status
                 <span className="ml-2 inline-block text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
                   Active
                 </span>
               )}
             </h3>
             <div className="flex flex-wrap gap-2 mt-2 text-sm text-gray-600">
-              <span className="bg-gray-100 px-2 py-1 rounded">
-                {skill.category}
-              </span>
-              <span className="bg-blue-100 px-2 py-1 rounded">
-                {skill.level}
-              </span>
+              {skill.category && ( // Renders 'category' if available from backend
+                <span className="bg-gray-100 px-2 py-1 rounded">
+                  {skill.category}
+                </span>
+              )}
+              {skill.level && ( // Renders 'level' if available from backend
+                <span className="bg-blue-100 px-2 py-1 rounded">
+                  {skill.level}
+                </span>
+              )}
               <span className="flex items-center bg-yellow-100 px-2 py-1 rounded">
                 <FiDollarSign className="mr-1" />
-                {skill.rate}/hr
+                {skill.price}/hr
               </span>
             </div>
           </div>
-          {skill.avgRating && (
+          {skill.avg_rating !== null && ( // Renders 'avg_rating' if available and not null
             <div className="flex items-center text-yellow-500 font-semibold">
               <FiStar className="mr-1" />
-              {skill.avgRating}
+              {skill.avg_rating}
             </div>
           )}
         </div>
 
-        <p className="mt-3 text-gray-600">{skill.description}</p>
+        {skill.description && ( // Renders 'description' if available from backend
+          <p className="mt-3 text-gray-600">{skill.description}</p>
+        )}
 
-        {skill.tags?.length > 0 && (
+        {skill.tags?.length > 0 && ( // Renders 'tags' if available and not empty
           <div className="mt-4">
             <h4 className="text-sm font-medium text-gray-700">
               Topics Covered:
             </h4>
             <div className="flex flex-wrap gap-2 mt-1">
-              {skill.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded"
-                >
-                  {tag}
-                </span>
-              ))}
+              {skill.tags.map(
+                (
+                  tag,
+                  index // Use index as key if tags are simple strings
+                ) => (
+                  <span
+                    key={tag + index}
+                    className="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded"
+                  >
+                    {tag}
+                  </span>
+                )
+              )}
             </div>
           </div>
         )}
@@ -241,7 +288,7 @@ const SkillCard = ({ skill, onEdit, onDelete, onToggleActive }) => (
         </button>
         <button
           className={`flex items-center justify-center px-4 py-2 rounded ${
-            skill.active
+            skill.active // 'active' reflects backend status
               ? "bg-red-100 text-red-600 hover:bg-red-200"
               : "bg-green-100 text-green-600 hover:bg-green-200"
           }`}

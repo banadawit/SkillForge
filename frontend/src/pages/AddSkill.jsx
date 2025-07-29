@@ -1,33 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "../utils/axios";
-import { FiPlus, FiX, FiInfo, FiDollarSign, FiBarChart2 } from "react-icons/fi";
+// Use 'api' for authenticated requests, and 'useAuth' for auth context
+import { api } from "../utils/auth";
+import { useAuth } from "../context/AuthContext";
+import { FiPlus, FiX, FiInfo, FiDollarSign } from "react-icons/fi"; // Removed FiBarChart2 as it's not used
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 
 const AddSkill = () => {
+  // State for form data, matching Django Skill model fields
   const [form, setForm] = useState({
-    title: "",
+    name: "", // Renamed from 'title' to match backend 'name' field
     description: "",
     level: "intermediate",
     category: "",
-    rate: "",
+    price: "", // Renamed from 'rate' to match backend 'price' field
     tags: [],
-    currentTag: "",
+    currentTag: "", // For temporary tag input
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // For form submission loading state
   const navigate = useNavigate();
+  // Get authentication state from context
+  const { isAuthenticated, isMentor, logout } = useAuth();
+
+  // Redirect if not authenticated or not a mentor
+  useEffect(() => {
+    if (!isAuthenticated || !isMentor()) {
+      toast.error("You must be logged in as a mentor to add skills.");
+      logout(); // Log out and redirect to login
+    }
+  }, [isAuthenticated, isMentor, logout]); // Dependencies for useEffect
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleTagAdd = () => {
-    if (form.currentTag && !form.tags.includes(form.currentTag)) {
+    const tag = form.currentTag.trim(); // Trim whitespace
+    if (tag && !form.tags.includes(tag)) {
+      // Check if tag is not empty and not already present
       setForm({
         ...form,
-        tags: [...form.tags, form.currentTag],
-        currentTag: "",
+        tags: [...form.tags, tag],
+        currentTag: "", // Clear current tag input after adding
       });
     }
   };
@@ -43,15 +58,57 @@ const AddSkill = () => {
     e.preventDefault();
     setLoading(true);
 
+    // Prepare data to send to backend, mapping frontend names to backend names
+    const dataToSend = {
+      name: form.name, // Send 'name' to backend
+      description: form.description,
+      level: form.level,
+      category: form.category,
+      price: Number(form.price), // Send 'price' to backend, ensure it's a number
+      tags: form.tags, // Send tags as an array (matches Django's JSONField)
+      // 'active', 'sessions_completed', 'avg_rating' are typically managed/defaulted by backend or through other flows
+    };
+
     try {
-      await axios.post("/skills/", {
-        ...form,
-        rate: Number(form.rate),
-      });
+      // Use api.post for authenticated POST request to /api/skills/
+      const response = await api.post("/skills/", dataToSend);
+      console.log("Skill added response:", response.data); // Log response for debugging
+
       toast.success("Skill added successfully!");
-      navigate("/mentor/skills");
+      navigate("/my-skills"); // Navigate back to mentor's skills list
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to add skill");
+      console.error(
+        "Failed to add skill:",
+        error.response?.data || error.message
+      );
+      const errorData = error.response?.data;
+      // Improved error display for specific field validation errors from backend
+      if (errorData) {
+        if (errorData.name) toast.error(`Skill Name: ${errorData.name[0]}`);
+        if (errorData.description)
+          toast.error(`Description: ${errorData.description[0]}`);
+        if (errorData.level) toast.error(`Level: ${errorData.level[0]}`);
+        if (errorData.category)
+          toast.error(`Category: ${errorData.category[0]}`);
+        if (errorData.price) toast.error(`Hourly Rate: ${errorData.price[0]}`);
+        if (errorData.tags) toast.error(`Tags: ${errorData.tags[0]}`);
+        if (errorData.detail)
+          toast.error(errorData.detail); // General API errors
+        else if (Object.keys(errorData).length > 0) {
+          // Catch other unhandled field errors
+          Object.keys(errorData).forEach((key) => {
+            if (Array.isArray(errorData[key])) {
+              toast.error(
+                `${key.charAt(0).toUpperCase() + key.slice(1)}: ${
+                  errorData[key][0]
+                }`
+              );
+            }
+          });
+        } else toast.error("Failed to add skill. Please check your input."); // Fallback
+      } else {
+        toast.error("Failed to add skill. An unexpected error occurred.");
+      }
     } finally {
       setLoading(false);
     }
@@ -79,15 +136,15 @@ const AddSkill = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="max-w-2xl mx-auto p-6"
+      className="max-w-2xl mx-auto p-6 pt-16" // Added pt-16 for navbar spacing
     >
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 pt-16">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
             Add New Teaching Skill
           </h1>
           <button
-            onClick={() => navigate("/mentor/skills")}
+            onClick={() => navigate("/my-skills")} // Navigate back to MySkills list
             className="text-gray-500 hover:text-gray-700"
           >
             <FiX className="w-6 h-6" />
@@ -96,14 +153,14 @@ const AddSkill = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Skill Title */}
+            {/* Skill Name (formerly Title) */}
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Skill Name *
               </label>
               <input
-                name="title"
-                value={form.title}
+                name="name" // Changed name to 'name'
+                value={form.name}
                 onChange={handleChange}
                 placeholder="e.g. Advanced React Patterns"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -152,7 +209,7 @@ const AddSkill = () => {
               </select>
             </div>
 
-            {/* Hourly Rate */}
+            {/* Hourly Rate (now 'price') */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Hourly Rate ($) *
@@ -163,8 +220,8 @@ const AddSkill = () => {
                 </div>
                 <input
                   type="number"
-                  name="rate"
-                  value={form.rate}
+                  name="price" // Changed name to 'price'
+                  value={form.price}
                   onChange={handleChange}
                   placeholder="e.g. 50"
                   min="1"
@@ -244,7 +301,7 @@ const AddSkill = () => {
           <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
-              onClick={() => navigate("/mentor/skills")}
+              onClick={() => navigate("/my-skills")} // Navigate back to My Skills list
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
             >
               Cancel
