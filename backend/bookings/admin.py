@@ -5,9 +5,11 @@ from .models import Review
 
 @admin.register(SessionBooking)
 class SessionBookingAdmin(admin.ModelAdmin):
-    list_display = ('learner', 'skill', 'session_date', 'session_time', 'is_confirmed', 'created_at')
-    list_filter = ('is_confirmed', 'session_date')
-    search_fields = ('learner__username', 'skill__name', 'skill__mentor__username')
+    list_display = ('learner', 'skill', 'session_date', 'session_time', 'status', 'created_at')
+    list_filter = ('status', 'session_date')
+    search_fields = ('learner__username', 'skill__name', 'skill__profile__user__username')
+    readonly_fields = ('created_at',)
+    fields = ('mentor', 'learner', 'skill', 'session_date', 'session_time', 'status', 'duration', 'skill_level', 'message', 'created_at')
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):

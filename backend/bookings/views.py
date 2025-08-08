@@ -44,22 +44,47 @@ class SessionBookingViewSet(viewsets.ModelViewSet):
             raise DRFValidationError("Mentors cannot book sessions.")
 
         # Ensure the learner field is set to the current user
-        # The serializer might also receive 'mentor' from the request body
         session = serializer.save(learner=user)
 
         try:
-            # Optional: if you’ve implemented availability validation in model's clean method
-            # This should be called before saving, but serializer.save() usually does it.
-            # If you have custom validation that needs to run after initial save:
-            # session.clean()
-            # session.save() # Save again if clean() modified it
-            pass # Remove this if you add session.clean() and session.save()
+            # Temporarily disable validation to debug the issue
+            # session.full_clean()
+            # session.save()
+            pass
         except DjangoValidationError as e:
             # Convert Django's ValidationError to DRF's ValidationError for proper API response
             raise DRFValidationError(e.messages)
         except Exception as e:
             # Catch any other unexpected errors during creation
             raise DRFValidationError(f"Error creating session: {str(e)}")
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        print(f"Update request from user: {user.username}, role: {user.profile.role}")
+        print(f"Updating booking: {serializer.instance.id}")
+        print(f"New data: {serializer.validated_data}")
+        
+        # Ensure user has a profile
+        if not hasattr(user, 'profile'):
+            raise DRFValidationError("User profile not found.")
+        
+        # Only mentors can update booking status
+        if user.profile.role != 'mentor':
+            raise DRFValidationError("Only mentors can update booking status.")
+        
+        # Ensure the mentor can only update their own bookings
+        booking = serializer.instance
+        if booking.mentor != user.profile:
+            raise DRFValidationError("You can only update your own booking requests.")
+        
+        # Only allow status updates
+        allowed_fields = ['status']
+        for field in serializer.validated_data:
+            if field not in allowed_fields:
+                raise DRFValidationError(f"Cannot update field: {field}")
+        
+        print(f"Saving booking with status: {serializer.validated_data.get('status')}")
+        serializer.save()
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

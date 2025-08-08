@@ -33,7 +33,8 @@ export default function App() {
           <Route path="/my-sessions" element={<MySessions />} />
           <Route path="/my-skills" element={<MySkills />} />
           <Route path="/mentor-bookings" element={<MentorBookings />} />
-          <Route path="/skills/:id/book" element={<BookSessionPage />} />
+          {/* <Route path="/skills/:id/book" element={<BookSessionPage />} /> */}
+          <Route path="/book/:id" element={<BookSessionPage />} />
         </Routes>
         <ToastContainer /> {/* Add this line for the Toast notifications */}
       </AuthProvider>

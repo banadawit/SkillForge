@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   FiUser,
   FiClock,
@@ -9,79 +9,189 @@ import {
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import BookingCard from "../components/BookingCard";
+import { api } from "../utils/auth";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+const BookingCard = ({ request, onAccept, onDecline }) => {
+  const formattedDate = new Date(request.session_date).toLocaleDateString(
+    "en-US",
+    {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }
+  );
+  const formattedTime = new Date(
+    `2000-01-01T${request.session_time}`
+  ).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`bg-white rounded-xl shadow-lg p-6 border border-gray-200`}
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+            <FiUser className="mr-2 text-indigo-600" />
+            {request.learner_username}
+          </h3>
+          <p className="text-gray-600 text-sm mt-1">
+            Requested session for:{" "}
+            <span className="font-semibold text-indigo-700">
+              {request.skill_title}
+            </span>{" "}
+          </p>
+        </div>
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            request.status === "pending"
+              ? "bg-yellow-100 text-yellow-800"
+              : request.status === "accepted"
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
+          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm text-gray-700 mb-6">
+        <div className="flex items-center">
+          <FiCalendar className="mr-2 text-gray-500" />
+          <span>{formattedDate}</span>
+        </div>
+        <div className="flex items-center">
+          <FiClock className="mr-2 text-gray-500" />
+          <span>
+            {formattedTime} ({request.duration} mins)
+          </span>{" "}
+        </div>
+        <div className="flex items-center col-span-full">
+          <FiMessageSquare className="mr-2 text-gray-500" />
+          <p className="italic">"{request.message}"</p>{" "}
+        </div>
+        <div className="flex items-center col-span-full">
+          <FiUser className="mr-2 text-gray-500" />
+          <p>Learner's Level: {request.skill_level}</p>{" "}
+        </div>
+      </div>
+
+      {request.status === "pending" && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => onAccept(request.id)}
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center"
+          >
+            <FiCheck className="mr-2" /> Accept
+          </button>
+          <button
+            onClick={() => onDecline(request.id)}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center"
+          >
+            <FiX className="mr-2" /> Decline
+          </button>
+        </div>
+      )}
+    </motion.div>
+  );
+};
 
 const MentorBookings = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // 'all', 'pending', 'accepted'
+  const [filter, setFilter] = useState("all");
+  const navigate = useNavigate();
+  const { isAuthenticated, isMentor, logout } = useAuth();
+
+  const fetchRequests = useCallback(async () => {
+    if (!isAuthenticated || !isMentor()) {
+      toast.error(
+        "You must be logged in as a mentor to view booking requests."
+      );
+      logout();
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.get("/bookings/");
+      setRequests(response.data);
+    } catch (error) {
+      console.error(
+        "Error fetching booking requests:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to load booking requests.";
+      toast.error(errorMessage);
+      if (error.response?.status === 401) {
+        logout();
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, isMentor, logout]);
 
   useEffect(() => {
-    const fetchRequests = async () => {
-      setLoading(true);
-
-      // Enhanced dummy data with status
-      const dummyRequests = [
-        {
-          id: 1,
-          learnerName: "Abdi Hassen",
-          learnerAvatar: "https://randomuser.me/api/portraits/men/32.jpg",
-          topic: "Django REST APIs",
-          preferredTime: "2025-06-26T13:00",
-          duration: 60,
-          message: "Need help with class-based views and authentication.",
-          status: "pending",
-          skillLevel: "Intermediate",
-        },
-        {
-          id: 2,
-          learnerName: "Mimi Gelan",
-          learnerAvatar: "https://randomuser.me/api/portraits/women/44.jpg",
-          topic: "React State Management",
-          preferredTime: "2025-06-27T10:30",
-          duration: 90,
-          message: "Want to understand Redux Toolkit best practices.",
-          status: "pending",
-          skillLevel: "Beginner",
-        },
-        {
-          id: 3,
-          learnerName: "Tewodros Kebede",
-          learnerAvatar: "https://randomuser.me/api/portraits/men/75.jpg",
-          topic: "Advanced Python",
-          preferredTime: "2025-06-28T15:00",
-          duration: 120,
-          message: "Help needed with async programming concepts.",
-          status: "accepted",
-          skillLevel: "Advanced",
-        },
-      ];
-
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setRequests(dummyRequests);
-      setLoading(false);
-    };
-
     fetchRequests();
-  }, []);
+  }, [fetchRequests]);
 
   const filteredRequests = requests.filter((req) =>
     filter === "all" ? true : req.status === filter
   );
 
-  const handleAccept = (id) => {
-    setRequests(
-      requests.map((req) =>
-        req.id === id ? { ...req, status: "accepted" } : req
-      )
-    );
-    toast.success("Session booked successfully!");
+  const handleUpdateBookingStatus = async (id, newStatus) => {
+    try {
+      const bookingId = parseInt(id, 10);
+      const response = await api.patch(`/bookings/${bookingId}/`, {
+        status: newStatus,
+      });
+
+      console.log("API Response Data:", response.data);
+
+      setRequests(
+        requests.map((req) =>
+          req.id === bookingId ? { ...req, ...response.data } : req
+        )
+      );
+
+      toast.success(
+        `Booking ${
+          response.data.skill_title || "request"
+        } ${newStatus} successfully!`
+      );
+    } catch (error) {
+      console.error(
+        `Error updating booking status to ${newStatus}:`,
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        `Failed to ${newStatus} booking.`;
+      toast.error(errorMessage);
+    }
   };
 
-  const handleDecline = (id) => {
-    setRequests(requests.filter((r) => r.id !== id));
-    toast.info("Request declined");
-  };
+  const handleAccept = (id) => handleUpdateBookingStatus(id, "accepted");
+  const handleDecline = (id) => handleUpdateBookingStatus(id, "declined");
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-20 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 pt-16 sm:px-6 lg:px-8">
@@ -123,11 +233,7 @@ const MentorBookings = () => {
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-          </div>
-        ) : filteredRequests.length === 0 ? (
+        {filteredRequests.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
             <FiCalendar className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-4 text-lg font-medium text-gray-900">
@@ -135,8 +241,8 @@ const MentorBookings = () => {
             </h3>
             <p className="mt-1 text-gray-500">
               {filter === "accepted"
-                ? "You haven't accepted any sessions yet"
-                : "Check back later for new requests"}
+                ? "You haven't accepted any sessions yet."
+                : "Check back later for new requests."}
             </p>
           </div>
         ) : (

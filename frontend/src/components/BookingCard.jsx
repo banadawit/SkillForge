@@ -1,9 +1,9 @@
-import { FiCheck, FiX } from "react-icons/fi";
 import { motion } from "framer-motion";
-import { FiUser, FiClock, FiCalendar, FiMessageSquare } from "react-icons/fi";
+import { FiCheck, FiX, FiUser, FiClock, FiCalendar, FiMessageSquare } from "react-icons/fi";
 
 const BookingCard = ({ request, onAccept, onDecline }) => {
-  const formattedDate = new Date(request.preferredTime).toLocaleDateString(
+  // ⭐ CORRECTED: Format date and time from separate backend fields
+  const formattedDate = new Date(request.session_date).toLocaleDateString(
     "en-US",
     {
       weekday: "short",
@@ -12,11 +12,12 @@ const BookingCard = ({ request, onAccept, onDecline }) => {
     }
   );
 
-  const formattedTime = new Date(request.preferredTime).toLocaleTimeString(
+  const formattedTime = new Date(`2000-01-01T${request.session_time}`).toLocaleTimeString(
     "en-US",
     {
       hour: "2-digit",
       minute: "2-digit",
+      hour12: true,
     }
   );
 
@@ -33,7 +34,8 @@ const BookingCard = ({ request, onAccept, onDecline }) => {
           <div className="flex-1">
             <div className="flex items-start justify-between">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {request.topic}
+                {/* ⭐ CORRECTED: Use skill_title from backend */}
+                {request.skill_title}
               </h3>
               {request.status === "accepted" && (
                 <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
@@ -43,17 +45,18 @@ const BookingCard = ({ request, onAccept, onDecline }) => {
             </div>
 
             <div className="flex items-center mt-4">
-              <img
-                src={request.learnerAvatar}
-                alt={request.learnerName}
-                className="w-10 h-10 rounded-full mr-3"
-              />
+              {/* ⭐ ADAPTED: Use learner's initial as a placeholder */}
+              <div className="w-10 h-10 rounded-full mr-3 bg-gray-200 flex items-center justify-center font-bold text-gray-600 text-lg">
+                {request.learner_username.charAt(0).toUpperCase()}
+              </div>
               <div>
                 <p className="font-medium text-gray-900">
-                  {request.learnerName}
+                  {/* ⭐ CORRECTED: Use learner_username from backend */}
+                  {request.learner_username}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Skill level: {request.skillLevel}
+                  {/* ⭐ CORRECTED: Use skill_level from backend */}
+                  Skill level: {request.skill_level}
                 </p>
               </div>
             </div>
@@ -61,11 +64,13 @@ const BookingCard = ({ request, onAccept, onDecline }) => {
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div className="flex items-center text-gray-600">
                 <FiCalendar className="mr-2" />
+                {/* ⭐ CORRECTED: Use formattedDate based on session_date */}
                 <span>{formattedDate}</span>
               </div>
               <div className="flex items-center text-gray-600">
                 <FiClock className="mr-2" />
                 <span>
+                  {/* ⭐ CORRECTED: Use formattedTime based on session_time */}
                   {formattedTime} ({request.duration} mins)
                 </span>
               </div>
@@ -77,6 +82,7 @@ const BookingCard = ({ request, onAccept, onDecline }) => {
                   <FiMessageSquare className="mr-2" />
                   Learner's Message
                 </h4>
+                {/* ⭐ CORRECTED: Use message from backend */}
                 <p className="text-gray-600">{request.message}</p>
               </div>
             )}

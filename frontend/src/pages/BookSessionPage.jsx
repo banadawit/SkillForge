@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
@@ -8,11 +8,19 @@ import {
   FiUser,
   FiMessageSquare,
   FiChevronDown,
+  FiDollarSign,
 } from "react-icons/fi";
+import { api } from "../utils/auth"; // Import the authenticated Axios instance
+import { useAuth } from "../context/AuthContext"; // Import useAuth hook
 
 const BookSessionPage = () => {
-  const { id } = useParams();
+  const { id: skillId } = useParams(); // Get skill ID from URL
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth(); // Get auth state
+
+  // State to hold the fetched skill data for display
+  const [skill, setSkill] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     preferredTime: "",
@@ -22,6 +30,41 @@ const BookSessionPage = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Function to fetch skill details based on the URL ID
+  const fetchSkillDetails = useCallback(async () => {
+    if (!isAuthenticated) {
+      toast.error("You must be logged in to book a session.");
+      logout(); // Logout and redirect
+      return;
+    }
+    setLoading(true);
+    try {
+      // Fetch the skill details using the public endpoint (since it's open)
+      const response = await api.get(`/skills/public/`);
+      // Find the specific skill by ID from the list
+      const skillFound = response.data.find((s) => s.id === parseInt(skillId));
+      if (skillFound) {
+        setSkill(skillFound);
+      } else {
+        toast.error("Skill not found.");
+        navigate("/skills"); // Redirect if skill not found
+      }
+    } catch (error) {
+      console.error("Error fetching skill details:", error);
+      toast.error("Failed to load skill details.");
+      // If 401, interceptor should handle, but a logout here is a good fallback
+      if (error.response?.status === 401) {
+        logout();
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [skillId, isAuthenticated, logout, navigate]);
+
+  useEffect(() => {
+    fetchSkillDetails();
+  }, [fetchSkillDetails]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,14 +81,24 @@ const BookSessionPage = () => {
       return;
     }
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Split the 'datetime-local' string into date and time
+    const [session_date, session_time] = formData.preferredTime.split("T");
 
-      console.log("Booking Request:", {
-        skillId: id,
-        ...formData,
-      });
+    // Prepare the data payload for the backend
+    const bookingData = {
+      skill: parseInt(skillId), // Pass the skill ID from URL params
+      session_date: session_date,
+      session_time: session_time,
+      duration: parseInt(formData.duration),
+      skill_level: formData.skillLevel,
+      message: formData.message,
+    };
+
+    try {
+      // ⭐ REPLACED: Use authenticated POST request to /api/bookings/
+      const response = await api.post("/bookings/", bookingData);
+
+      console.log("Booking Request Sent:", response.data);
 
       toast.success(
         <div>
@@ -55,7 +108,15 @@ const BookSessionPage = () => {
       );
       navigate("/my-learning");
     } catch (error) {
-      toast.error("Failed to send booking request");
+      console.error(
+        "Failed to send booking request:",
+        error.response?.data || error.message
+      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to send booking request.";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -66,6 +127,24 @@ const BookSessionPage = () => {
     value: mins,
     label: `${mins} minutes`,
   }));
+
+  // Render loading state for skill data fetch
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-20 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  // Render a message if skill data wasn't found after loading
+  if (!skill) {
+    return (
+      <div className="min-h-screen pt-20 flex justify-center items-center">
+        <p className="text-gray-600">Error: Skill not found.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pt-20 pb-12 px-4 sm:px-6 lg:px-8">
@@ -79,8 +158,13 @@ const BookSessionPage = () => {
           <div className="bg-indigo-600 p-6 text-center">
             <h1 className="text-2xl font-bold text-white">Book a Session</h1>
             <p className="text-indigo-100 mt-1">
-              Schedule your learning session with the mentor
+              {`with ${skill.mentor} for "${skill.title}"`}{" "}
+              {/* ⭐ Dynamic header! ⭐ */}
             </p>
+            <div className="mt-2 flex items-center justify-center text-indigo-100 text-sm">
+              <FiDollarSign className="mr-1" />
+              <span>{`$${parseFloat(skill.price).toFixed(2)}/hr`}</span>
+            </div>
           </div>
 
           {/* Form */}
@@ -97,13 +181,10 @@ const BookSessionPage = () => {
                   name="preferredTime"
                   value={formData.preferredTime}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   required
                   min={new Date().toISOString().slice(0, 16)} // Disable past dates
                 />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiCalendar className="text-gray-400" />
-                </div>
               </div>
               {formData.preferredTime && (
                 <p className="text-xs text-gray-500">
@@ -123,7 +204,7 @@ const BookSessionPage = () => {
                   name="duration"
                   value={formData.duration}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
+                  className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
                 >
                   {durationOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -131,9 +212,6 @@ const BookSessionPage = () => {
                     </option>
                   ))}
                 </select>
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiClock className="text-gray-400" />
-                </div>
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                   <FiChevronDown className="text-gray-400" />
                 </div>
@@ -151,15 +229,12 @@ const BookSessionPage = () => {
                   name="skillLevel"
                   value={formData.skillLevel}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
+                  className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
                 >
                   <option value="Beginner">Beginner</option>
                   <option value="Intermediate">Intermediate</option>
                   <option value="Advanced">Advanced</option>
                 </select>
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiUser className="text-gray-400" />
-                </div>
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                   <FiChevronDown className="text-gray-400" />
                 </div>
@@ -178,12 +253,9 @@ const BookSessionPage = () => {
                   rows={4}
                   value={formData.message}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="What would you like to focus on during this session?"
                 />
-                <div className="absolute top-3 left-3">
-                  <FiMessageSquare className="text-gray-400" />
-                </div>
               </div>
             </div>
 
@@ -200,7 +272,7 @@ const BookSessionPage = () => {
               {isSubmitting ? (
                 <>
                   <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
